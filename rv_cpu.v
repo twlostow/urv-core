@@ -44,6 +44,7 @@ module rv_cpu
    wire 	 w_stall;
    wire 	 x_stall;
    wire 	 x_kill;
+   wire 	 f_kill;
  
    wire [31:0] 	 f2d_pc, f2d_ir;
    wire 	 f2d_ir_valid;
@@ -62,6 +63,8 @@ module rv_cpu
       .im_valid_i(im_valid_i),
       
       .f_stall_i(f_stall),
+      .f_kill_i(f_kill),
+      
       .f_ir_o(f2d_ir),
       .f_pc_o(f2d_pc),
       .f_ir_valid_o(f2d_ir_valid),
@@ -227,7 +230,10 @@ always@(posedge clk_i)
    assign x_stall = f_stall || (!f2d_ir_valid);
    assign w_stall = x_stall;
 
-   assign x_kill = x2f_bra && ~x_bra_d0;
+   assign x_kill = x2f_bra ;
+   assign f_kill = x2f_bra ;
+   
+//&& ~x_bra_d0;
    
       
 endmodule // rv_cpu

@@ -31,7 +31,7 @@
 `define BRA_EQ 3'b000
 `define BRA_NEQ  3'b001
 `define BRA_LT 3'b100
-`define BRA_GE 3'b100
+`define BRA_GE 3'b101
 `define BRA_LTU 3'b110
 `define BRA_GEU 3'b111
 

@@ -92,10 +92,10 @@ module rv_exec
      case (d_fun_i)
        `BRA_EQ: branch_condition_met <= (rs1 == rs2);
        `BRA_NEQ: branch_condition_met <= ~(rs1 == rs2);
-       `BRA_GEU: branch_condition_met <= ($signed(rs1) >= $signed(rs2));
-       `BRA_LTU: branch_condition_met <= ($signed(rs1) < $signed(rs2));
-       `BRA_GE: branch_condition_met <= (rs1 >= rs2);
-       `BRA_LT: branch_condition_met <= (rs1 < rs2);
+       `BRA_GE: branch_condition_met <= ($signed(rs1) >= $signed(rs2));
+       `BRA_LT: branch_condition_met <= ($signed(rs1) < $signed(rs2));
+       `BRA_GEU: branch_condition_met <= (rs1 >= rs2);
+       `BRA_LTU: branch_condition_met <= (rs1 < rs2);
        default: branch_condition_met <= 0;
      endcase // case (d_fun_i)
 
@@ -115,11 +115,18 @@ module rv_exec
 	alu_op2 <= (d_opcode_i == `OPC_OP_IMM) ? d_imm_i_i : rs2;
      end
 
+   wire is_subtract = (d_opcode_i == `OPC_OP && d_shifter_sign_i);
+  
    // the ALU itself
    always@*
      begin
 	case (d_fun_i)
-	  `FUNC_ADD: alu_result <= alu_op1 + alu_op2;
+	  `FUNC_ADD:
+	    if(is_subtract)
+	      alu_result <= alu_op1 - alu_op2;
+	    else
+	      alu_result <= alu_op1 + alu_op2;
+	      
 	  `FUNC_XOR: alu_result <= alu_op1 ^ alu_op2;
 	  `FUNC_OR: alu_result <= alu_op1 | alu_op2;
 	  `FUNC_AND: alu_result <= alu_op1 & alu_op2;

@@ -30,6 +30,8 @@ module rv_fetch
  input 		   im_valid_i,
 
  input 		   f_stall_i,
+ input 		   f_kill_i,
+ 
 
  output [31:0] 	   f_ir_o,
  output reg [31:0] f_pc_o,
@@ -61,9 +63,11 @@ module rv_fetch
 	rst_d <= 1;
 	
 	if (!f_stall_i) begin
+	      
+	   
 	   if(im_valid_i) begin
 	      ir <= im_data_i;
-	      f_ir_valid_o <= rst_d && !x_bra_i;
+	      f_ir_valid_o <= rst_d && !f_kill_i;
 	      f_pc_o <= pc;
 	      pc <= pc_next;
 

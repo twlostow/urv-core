@@ -102,7 +102,7 @@ module main;
 
    
    initial begin
-      load_ram("sw/hello.ram");
+      load_ram("sw/test2/test2.ram");
       repeat(3) @(posedge clk);
       rst = 0;
    end
@@ -196,14 +196,41 @@ module main;
 	if(dm_write)
 	  $display("DM Write addr %x data %x", dm_addr, dm_data_s);
 	if (DUT.writeback.x_load_i)
-	  $display("DM Load addr %x data %x -> %s", dm_addr_d0, dm_data_l, decode_regname(DUT.writeback.x_rd_i));
+	  begin
+	     if ($isunkown(dm_data_l))
+	       begin
+		  $error("Attempt to load uninitialized entry from memory");
+		  $stop;
+	       end
+	     
+
+     $display("DM Load addr %x data %x -> %s", dm_addr_d0, dm_data_l, decode_regname(DUT.writeback.x_rd_i));
+	  end
+	
      end
    
+   integer f_console;
+   
+   initial begin
+      f_console = $fopen("console.txt","wb");
+      #500us;
 
- 
+//      $fclose(f_console);
+     
+
+   end
+   
+   
    always@(posedge clk)
      if(dm_write && dm_addr == 'h100000)
-       $display("\n ****** TX '%c' \n", dm_data_s[7:0]) ;
+       begin
+	  $display("\n ****** TX '%c' \n", dm_data_s[7:0]) ;
+//	  byte x = dm_data_s[7:0];
+	  $fwrite(f_console,"%c", dm_data_s[7:0]);
+	  $fflush(f_console);
+	  
+       end
+   
    
 
    

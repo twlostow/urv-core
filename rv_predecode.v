@@ -44,7 +44,7 @@ module rv_predecode
  output [4:0]  x_rd_o,
 
  output [4:0]  x_shamt_o,
- output [2:0]  x_fun_o,
+ output reg [2:0]  x_fun_o,
 
  output [4:0]  x_opcode_o,
  output        x_shifter_sign_o,
@@ -56,9 +56,12 @@ module rv_predecode
  output [31:0] x_imm_j_o
  );
 
+   wire [4:0]       f_opcode = f_ir_i[6:2];
+   
+   
    assign rf_rs1_o = im_data_i [19:15];
    assign rf_rs2_o = im_data_i [24:20];
-
+  
    
    assign x_rs1_o = f_ir_i [19:15];
    assign x_rs2_o = f_ir_i [24:20];
@@ -66,7 +69,21 @@ module rv_predecode
    assign x_rd_o = f_ir_i [11:7];
    assign x_opcode_o = f_ir_i[6:2];
    assign x_shamt_o = f_ir_i[24:20];
-   assign x_fun_o = f_ir_i[14:12];
+
+   
+   // attempt to reuse ALU for jump address generation
+
+   always@*
+     case (f_opcode)
+       `OPC_JAL, `OPC_JALR, `OPC_LUI, `OPC_AUIPC:
+	 x_fun_o <= `FUNC_ADD;
+       default:
+	 x_fun_o <= f_ir_i[14:12];
+     endcase // case (f_opcode)
+   
+   
+   //assign x_fun_o = f_ir_i[14:12];
+   
    assign x_shifter_sign_o = f_ir_i[30];
 
    
@@ -81,7 +98,8 @@ f_ir_i[20], f_ir_i[30:25], f_ir_i[24:21], 1'b0};
 
 
    assign x_pc_o = f_pc_i;
-   
+
+  
    
    
 

@@ -36,15 +36,18 @@ add wave -noupdate -expand -group fetch /main/DUT/fetch/rst_i
 add wave -noupdate -expand -group fetch /main/DUT/fetch/im_addr_o
 add wave -noupdate -expand -group fetch /main/DUT/fetch/im_data_i
 add wave -noupdate -expand -group fetch /main/DUT/fetch/im_valid_i
+add wave -noupdate -expand -group fetch /main/DUT/fetch/im_valid_d0
 add wave -noupdate -expand -group fetch /main/DUT/fetch/f_stall_i
+add wave -noupdate -expand -group fetch /main/DUT/fetch/f_kill_i
 add wave -noupdate -expand -group fetch /main/DUT/fetch/f_ir_o
 add wave -noupdate -expand -group fetch /main/DUT/fetch/f_pc_o
-add wave -noupdate -expand -group fetch /main/DUT/fetch/f_ir_valid_o
+add wave -noupdate -expand -group fetch /main/DUT/fetch/f_valid_o
 add wave -noupdate -expand -group fetch /main/DUT/fetch/x_pc_bra_i
 add wave -noupdate -expand -group fetch /main/DUT/fetch/x_bra_i
 add wave -noupdate -expand -group fetch /main/DUT/fetch/pc
-add wave -noupdate -expand -group fetch /main/DUT/fetch/pc_next
 add wave -noupdate -expand -group fetch /main/DUT/fetch/ir
+add wave -noupdate -expand -group fetch /main/DUT/fetch/rst_d
+add wave -noupdate -expand -group fetch /main/DUT/fetch/pc_next
 add wave -noupdate -group decode /main/DUT/decode/clk_i
 add wave -noupdate -group decode /main/DUT/decode/rst_i
 add wave -noupdate -group decode /main/DUT/decode/f_ir_i
@@ -80,11 +83,34 @@ add wave -noupdate -expand -group regfile /main/DUT/regfile/rs2_regfile
 add wave -noupdate -expand -group regfile /main/DUT/regfile/rs1_bypass
 add wave -noupdate -expand -group regfile /main/DUT/regfile/rs2_bypass
 add wave -noupdate /main/DUT/regfile/bank0/ram
+add wave -noupdate -expand -group shifter /main/DUT/execute/shifter/clk_i
+add wave -noupdate -expand -group shifter /main/DUT/execute/shifter/rst_i
+add wave -noupdate -expand -group shifter /main/DUT/execute/shifter/d_i
+add wave -noupdate -expand -group shifter /main/DUT/execute/shifter/q_o
+add wave -noupdate -expand -group shifter /main/DUT/execute/shifter/shift_i
+add wave -noupdate -expand -group shifter /main/DUT/execute/shifter/func_i
+add wave -noupdate -expand -group shifter /main/DUT/execute/shifter/arith_i
+add wave -noupdate -expand -group shifter /main/DUT/execute/shifter/extend_sign
+add wave -noupdate -expand -group shifter /main/DUT/execute/shifter/shift_pre
+add wave -noupdate -expand -group shifter /main/DUT/execute/shifter/shift_16
+add wave -noupdate -expand -group shifter /main/DUT/execute/shifter/shift_8
+add wave -noupdate -expand -group shifter /main/DUT/execute/shifter/s1_out
+add wave -noupdate -expand -group shifter /main/DUT/execute/shifter/s2_extend_sign
+add wave -noupdate -expand -group shifter /main/DUT/execute/shifter/s2_shift
+add wave -noupdate -expand -group shifter /main/DUT/execute/shifter/s2_func
+add wave -noupdate -expand -group shifter /main/DUT/execute/shifter/shift_4
+add wave -noupdate -expand -group shifter /main/DUT/execute/shifter/shift_2
+add wave -noupdate -expand -group shifter /main/DUT/execute/shifter/shift_1
+add wave -noupdate -expand -group shifter /main/DUT/execute/shifter/shift_post
 add wave -noupdate -expand -group execute /main/DUT/execute/clk_i
 add wave -noupdate -expand -group execute /main/DUT/execute/rst_i
 add wave -noupdate -expand -group execute /main/DUT/execute/x_kill_i
 add wave -noupdate -expand -group execute /main/DUT/execute/x_stall_i
 add wave -noupdate -expand -group execute /main/DUT/execute/x_stall_req_o
+add wave -noupdate -expand -group execute /main/DUT/execute/d_valid_i
+add wave -noupdate -expand -group execute /main/DUT/execute/shifter_req
+add wave -noupdate -expand -group execute /main/DUT/execute/shifter_req_d0
+add wave -noupdate -expand -group execute /main/DUT/execute/shifter_stall_req
 add wave -noupdate -expand -group execute /main/DUT/execute/d_pc_i
 add wave -noupdate -expand -group execute /main/DUT/execute/d_rd_i
 add wave -noupdate -expand -group execute /main/DUT/execute/d_fun_i
@@ -124,19 +150,21 @@ add wave -noupdate -expand -group execute /main/DUT/execute/rd_write
 add wave -noupdate -expand -group writeback /main/DUT/writeback/clk_i
 add wave -noupdate -expand -group writeback /main/DUT/writeback/rst_i
 add wave -noupdate -expand -group writeback /main/DUT/writeback/w_stall_i
+add wave -noupdate -expand -group writeback /main/DUT/writeback/w_stall_req_o
 add wave -noupdate -expand -group writeback /main/DUT/writeback/x_fun_i
 add wave -noupdate -expand -group writeback /main/DUT/writeback/x_load_i
 add wave -noupdate -expand -group writeback /main/DUT/writeback/x_rd_i
 add wave -noupdate -expand -group writeback /main/DUT/writeback/x_rd_value_i
 add wave -noupdate -expand -group writeback /main/DUT/writeback/x_rd_write_i
 add wave -noupdate -expand -group writeback /main/DUT/writeback/dm_data_l_i
+add wave -noupdate -expand -group writeback /main/DUT/writeback/dm_valid_l_i
 add wave -noupdate -expand -group writeback /main/DUT/writeback/rf_rd_value_o
 add wave -noupdate -expand -group writeback /main/DUT/writeback/rf_rd_o
 add wave -noupdate -expand -group writeback /main/DUT/writeback/rf_rd_write_o
 add wave -noupdate -expand -group writeback /main/DUT/writeback/load_value
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {969304 ps} 0}
-configure wave -namecolwidth 150
+WaveRestoreCursors {{Cursor 1} {14655000 ps} 0}
+configure wave -namecolwidth 250
 configure wave -valuecolwidth 100
 configure wave -justifyvalue left
 configure wave -signalnamewidth 1
@@ -150,4 +178,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {911 ns} {1039 ns}
+WaveRestoreZoom {11530808 ps} {16159192 ps}

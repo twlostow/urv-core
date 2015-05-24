@@ -29,7 +29,7 @@ module rv_exec
 
    input 	     x_stall_i,
    input 	     x_kill_i,
-   output reg 	     x_stall_req_o, 
+   output 	     x_stall_req_o, 
    
    input [31:0]      d_pc_i,
    input [4:0] 	     d_rd_i,
@@ -37,6 +37,8 @@ module rv_exec
 
    input [31:0]      rf_rs1_value_i,
    input [31:0]      rf_rs2_value_i,
+
+   input 	     d_valid_i,
    
    input [4:0] 	     d_opcode_i,
    input 	     d_shifter_sign_i,
@@ -86,7 +88,30 @@ module rv_exec
 
    reg 	     rd_write;
    
+   wire cmp_sign_ext = ( ( d_opcode_i == `OPC_BRANCH) && ( ( d_fun_i == `BRA_GE )|| (d_fun_i == `BRA_LT ) ) )
+	|| ( ( (d_opcode_i == `OPC_OP) || (d_opcode_i == `OPC_OP_IMM) ) && (d_fun_i == `FUNC_SLT ) );
+   
+   wire [32:0] cmp_op1 = { cmp_sign_ext ? alu_op1[31] : 1'b0, alu_op1 };
+   wire [32:0] cmp_op2 = { cmp_sign_ext ? alu_op2[31] : 1'b0, alu_op2 };
 
+   wire cmp_equal = (cmp_op1 == cmp_op2);
+   wire cmp_lt = ($signed(cmp_op1) < $signed(cmp_op2));
+
+   
+   
+	// branch condition decoding   
+   always@*
+     case (d_fun_i)
+       `BRA_EQ: branch_condition_met <= cmp_equal;
+       `BRA_NEQ: branch_condition_met <= ~cmp_equal;
+       `BRA_GE: branch_condition_met <= ~cmp_lt | cmp_equal;
+       `BRA_LT: branch_condition_met <= cmp_lt;
+       `BRA_GEU: branch_condition_met <= ~cmp_lt | cmp_equal;
+       `BRA_LTU: branch_condition_met <= cmp_lt;
+       default: branch_condition_met <= 0;
+     endcase // case (d_fun_i)
+   
+/* -----\/----- EXCLUDED -----\/-----
 // branch condition decoding   
    always@*
      case (d_fun_i)
@@ -98,6 +123,7 @@ module rv_exec
        `BRA_LTU: branch_condition_met <= (rs1 < rs2);
        default: branch_condition_met <= 0;
      endcase // case (d_fun_i)
+ -----/\----- EXCLUDED -----/\----- */
 
    always@*
      case (d_opcode_i)
@@ -108,15 +134,57 @@ module rv_exec
        default: branch_target<= 32'hx;
      endcase // case (d_opcode_i)
 
+/* -----\/----- EXCLUDED -----\/-----
+  rd_value <= d_pc_i + 4;
+	      rd_write <= 1;
+	   end
+ -----/\----- EXCLUDED -----/\----- *-/
+	 
+	 `OPC_LUI: 
+	   begin
+	      rd_value <= { d_imm_u_i[31:12] , 12'h0 };
+	      rd_write <= 1;
+	   end
+	 
+	      
+	 `OPC_AUIPC:
+	   begin
+	      rd_value <= d_pc_i + { d_imm_u_i[31:12], 12'h0 };
+ -----/\----- EXCLUDED -----/\----- */
+   
    // decode ALU operands
    always@*
      begin
-	alu_op1 <= rs1;
-	alu_op2 <= (d_opcode_i == `OPC_OP_IMM) ? d_imm_i_i : rs2;
+	case (d_opcode_i)
+	  `OPC_LUI: alu_op1 <= { d_imm_u_i[31:12] , 12'h0 };
+	  `OPC_AUIPC: alu_op1 <= { d_imm_u_i[31:12] , 12'h0 };
+	  `OPC_JAL: alu_op1 <= 4;
+	  `OPC_JALR: alu_op1 <= 4;
+	  default: alu_op1 <= rs1;
+	endcase // case (d_opcode_i)
+	
+   
+	      
+//alu_op1 <= rs1;
+
+	case (d_opcode_i)
+	  `OPC_LUI: alu_op2 <= 0;
+	  `OPC_AUIPC: alu_op2 <= d_pc_i;
+	  `OPC_JAL: alu_op2 <= d_pc_i;
+	  `OPC_JALR: alu_op2 <= d_pc_i;
+	  `OPC_OP_IMM: alu_op2 <= d_imm_i_i;
+	  default: alu_op2 <= rs2;
+	endcase // case (d_opcode_i)
+	
+	 
+	//alu_op2 <= (d_opcode_i == `OPC_OP_IMM) ? d_imm_i_i : rs2;
+	  //endcase
+	    
      end
 
    wire is_subtract = (d_opcode_i == `OPC_OP && d_shifter_sign_i);
-  
+     wire[31:0] shifter_result;
+
    // the ALU itself
    always@*
      begin
@@ -130,32 +198,69 @@ module rv_exec
 	  `FUNC_XOR: alu_result <= alu_op1 ^ alu_op2;
 	  `FUNC_OR: alu_result <= alu_op1 | alu_op2;
 	  `FUNC_AND: alu_result <= alu_op1 & alu_op2;
-	  `FUNC_SLT: alu_result <= ($signed(alu_op1) < $signed(alu_op2)) ? 1 : 0;
-	  `FUNC_SLTU: alu_result <= ((alu_op1) < (alu_op2)) ? 1 : 0;
-	  `FUNC_SL: alu_result <= alu_op1 << alu_op2[4:0];
+	  `FUNC_SLT: alu_result <= cmp_lt ? 1 : 0;
+	  `FUNC_SLTU: alu_result <= cmp_lt ? 1 : 0;
+	  `FUNC_SL, `FUNC_SR: alu_result <= shifter_result;
+	  
+/*	  `FUNC_SL: alu_result <= alu_op1 << alu_op2[4:0];
 	  `FUNC_SR:
 	    begin
 	       if(d_shifter_sign_i)
 		 alu_result <= $signed(alu_op1) >>> alu_op2[4:0];
 	       else
 		 alu_result <= alu_op1 >> alu_op2[4:0];
-	    end
+	    end*/
 
 	  default: alu_result <= 32'hx;
 	endcase // case (d_fun_i)
      end // always@ *
+
+   reg 	shifter_req_d0;
+   wire shifter_req = (d_valid_i) && (d_fun_i == `FUNC_SL || d_fun_i == `FUNC_SR) &&
+	(d_opcode_i == `OPC_OP || d_opcode_i == `OPC_OP_IMM );
+      
+   rv_shifter shifter 
+     (
+      .clk_i(clk_i),
+      .rst_i(rst_i),
+
+      .d_i(alu_op1),
+      .q_o(shifter_result),
+      .shift_i(alu_op2[4:0]),
+      .func_i(d_fun_i),
+      .arith_i(d_shifter_sign_i)
+      );
+
+
+
+   always@(posedge clk_i)
+     shifter_req_d0 <= shifter_req;
+   
+   wire shifter_stall_req = shifter_req && !shifter_req_d0;
+// && !shifter_req_d0;
+
+/*   always@(posedge clk_i)
+     if(shifter_req)
+       $display("%08x: shifter op %x fun %x %x op1 %x op2 %x", d_pc_i, d_opcode_i, d_fun_i, d_shifter_sign_i, alu_op1, alu_op2);
+
+   always@(posedge clk_i)
+     if(shifter_req_d0)
+       $display("%08x: shifter result %x", d_pc_i, shifter_result);
+*/
+ 
+       
    
    // rdest write value
   always@*
     begin
        case (d_opcode_i)
-	 `OPC_OP_IMM, `OPC_OP:
+	 `OPC_OP_IMM, `OPC_OP, `OPC_JAL, `OPC_JALR, `OPC_LUI, `OPC_AUIPC:
 	   begin  
 	      rd_value <= alu_result;
 	      rd_write <= 1;
 	   end
 	 
-	 `OPC_JAL, `OPC_JALR: 
+/*	 `OPC_JAL, `OPC_JALR: 
 	   begin
 	      rd_value <= d_pc_i + 4;
 	      rd_write <= 1;
@@ -166,13 +271,13 @@ module rv_exec
 	      rd_value <= { d_imm_u_i[31:12] , 12'h0 };
 	      rd_write <= 1;
 	   end
-	 
 	      
 	 `OPC_AUIPC:
 	   begin
 	      rd_value <= d_pc_i + { d_imm_u_i[31:12], 12'h0 };
 	      rd_write <= 1;
 	   end
+	 */
 	 
 	 default: 
 	   begin
@@ -199,7 +304,7 @@ module rv_exec
    // generate store value/select
    always@*
      begin
-	case (d_fun_i)
+	  case (d_fun_i)
 	  `LDST_B: 
 	    begin
 	       dm_data_s <= { rs2[7:0], rs2[7:0], rs2[7:0], rs2[7:0] };
@@ -213,7 +318,9 @@ module rv_exec
 	    begin
 	       dm_data_s <= { rs2[15:0], rs2[15:0] };
 	       dm_select_s[0] <= (dm_addr [1] == 1'b0);
-	       dm_select_s[1] <= (dm_addr [1] == 1'b1);
+	       dm_select_s[1] <= (dm_addr [1] == 1'b0);
+	       dm_select_s[2] <= (dm_addr [1] == 1'b1);
+	       dm_select_s[3] <= (dm_addr [1] == 1'b1);
 	    end
 
 	  `LDST_L:
@@ -248,7 +355,7 @@ module rv_exec
 
    always@*
      begin
-	dm_write_s <= ( (d_opcode_i == `OPC_STORE) && !x_stall_i );
+	dm_write_s <= ( (d_opcode_i == `OPC_STORE) && !x_stall_i && d_valid_i);
      end
 
    assign dm_addr_o = dm_addr;
@@ -261,7 +368,6 @@ module rv_exec
       if (rst_i) begin
 	 f_branch_target_o <= 0;
 	 f_branch_take_o <= 0;
-	 x_stall_req_o <= 0;
 	 w_rd_write_o <= 0;
 	 w_rd_o <= 0;
 	 w_fun_o <= 0;
@@ -270,20 +376,26 @@ module rv_exec
 	 
       end else if (!x_stall_i) begin
 	 f_branch_target_o <= branch_target;
-	 f_branch_take_o <= branch_take && !x_kill_i;
-	 x_stall_req_o <= 0;
+	 f_branch_take_o <= branch_take && !x_kill_i && d_valid_i;
 
 	 w_rd_o <= d_rd_i;
+	 
+//	 if(!shifter_stall_req)
 	 w_rd_value_o <= rd_value;
-	 w_rd_write_o <= rd_write && !x_kill_i;
+	 
+	 w_rd_write_o <= rd_write && !x_kill_i && d_valid_i;
 
 	 w_fun_o <= d_fun_i;
-	 w_load_o <= (d_opcode_i == `OPC_LOAD ? 1: 0) && !x_kill_i;
+	 w_load_o <= (d_opcode_i == `OPC_LOAD ? 1: 0) && d_valid_i && !x_kill_i;
 	 w_dm_addr_o <= dm_addr;
 	 
-      end // if (!x_stall_i)
+      end else begin // if (!x_stall_i)
+	 f_branch_take_o <= 0;
+	 w_rd_write_o <= 0;
+	 w_load_o <= 0;
+      end
 
-    
+   assign x_stall_req_o = shifter_stall_req;
 
 
 endmodule

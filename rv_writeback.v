@@ -29,16 +29,20 @@ module rv_writeback
 
    input 	 w_stall_i,
 
+   output 	 w_stall_req_o,
+   
+   
    input [2:0] 	 x_fun_i,
    input 	 x_load_i,
 
-   input [31:0] x_dm_addr_i,
+   input [31:0]  x_dm_addr_i,
    input [4:0] 	 x_rd_i,
    input [31:0]  x_rd_value_i,
    input 	 x_rd_write_i,
 
    input [31:0]  dm_data_l_i,
-
+   input 	 dm_valid_l_i,
+   
    output [31:0] rf_rd_value_o,
    output [4:0]  rf_rd_o,
    output 	 rf_rd_write_o
@@ -92,7 +96,8 @@ module rv_writeback
 
    assign rf_rd_value_o = (x_load_i ? load_value : x_rd_value_i );
    assign rf_rd_o = (x_rd_i);
-   assign rf_rd_write_o = (w_stall_i ? 1'b0 : (x_load_i ? 1'b1 : x_rd_write_i ));
+   assign rf_rd_write_o = (w_stall_i ? 1'b0 : (x_load_i && dm_valid_l_i ? 1'b1 : x_rd_write_i ));
 
+   assign w_stall_req_o = (x_load_i && !dm_valid_l_i);
 
 endmodule // rv_writeback

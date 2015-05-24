@@ -24,12 +24,16 @@
 
 module main;
 
+   const int dump_insns = 1;
+   const int dump_mem_accesses = 1;
+ 
+   
    reg clk = 0;
    reg rst = 1;
    
    wire [31:0] im_addr;
    reg [31:0] im_data;
-   wire        im_valid = 1'b1;
+   reg        im_valid;
    
 
    wire [31:0] dm_addr;
@@ -37,6 +41,8 @@ module main;
    reg [31:0] dm_data_l;
    wire [3:0]  dm_data_select;
    wire        dm_write;
+   reg 	       dm_valid_l = 0;
+   
 
    localparam int mem_size = 16384;
    
@@ -60,9 +66,19 @@ module main;
       
    endtask // load_ram
 
+   int seed;
+
+
+   
    always@(posedge clk)
      begin
-	im_data <= mem[(im_addr / 4) % mem_size];
+	if(   $dist_uniform(seed, 0, 100 ) <= 100) begin
+	   im_data <= mem[(im_addr / 4) % mem_size];
+	   im_valid <= 1;
+	end else
+	   im_valid <= 0;
+	
+	
 
 	if(dm_write && dm_data_select[0])
 	  mem [(dm_addr / 4) % mem_size][7:0] <= dm_data_s[7:0];
@@ -73,7 +89,16 @@ module main;
 	if(dm_write && dm_data_select[3])
 	  mem [(dm_addr / 4) % mem_size][31:24] <= dm_data_s[31:24];
 
-	dm_data_l <= mem[(dm_addr/4) % mem_size];
+	if(   $dist_uniform(seed, 0, 100 ) <= 50) begin
+	   dm_data_l <= mem[(dm_addr/4) % mem_size];
+	   dm_valid_l <= 1;
+	end else begin
+	   dm_data_l <= 32'hx;
+	   dm_valid_l <= 0;
+	end
+	
+	
+//	dm_data_l <= mem[(dm_addr/4) % mem_size];
 	
 	
      end
@@ -94,7 +119,8 @@ module main;
       .dm_data_s_o(dm_data_s),
       .dm_data_l_i(dm_data_l),
       .dm_data_select_o(dm_data_select),
-      .dm_write_o(dm_write)
+      .dm_write_o(dm_write),
+      .dm_valid_l_i(dm_valid_l)
       );
 
    always #5ns clk <= ~clk;
@@ -191,11 +217,13 @@ module main;
 
    always@(posedge clk)
      begin
+	if(dump_mem_accesses)
+	  begin
 	dm_addr_d0 <= dm_addr;
 	
 	if(dm_write)
 	  $display("DM Write addr %x data %x", dm_addr, dm_data_s);
-	if (DUT.writeback.x_load_i)
+	if (DUT.writeback.x_load_i && !DUT.writeback.w_stall_i)
 	  begin
 	     if ($isunkown(dm_data_l))
 	       begin
@@ -206,7 +234,7 @@ module main;
 
      $display("DM Load addr %x data %x -> %s", dm_addr_d0, dm_data_l, decode_regname(DUT.writeback.x_rd_i));
 	  end
-	
+	end
      end
    
    integer f_console;
@@ -236,7 +264,7 @@ module main;
    
    always@(posedge clk)
    
-     if(!DUT.execute.x_stall_i && !DUT.execute.x_kill_i)
+     if(dump_insns && DUT.execute.d_valid_i && !DUT.execute.x_stall_i && !DUT.execute.x_kill_i)
        begin
 	  automatic string opc="<unk>", fun="", args="";
 

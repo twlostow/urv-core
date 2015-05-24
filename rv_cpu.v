@@ -37,7 +37,9 @@ module rv_cpu
    output [31:0] dm_data_s_o,
    input [31:0]  dm_data_l_i,
    output [3:0]  dm_data_select_o,
-   output 	 dm_write_o   
+   output 	 dm_write_o,
+   input 	 dm_busy_s_i,
+   input 	 dm_valid_l_i
    );
 
    wire 	 f_stall;
@@ -46,11 +48,14 @@ module rv_cpu
    wire 	 x_kill;
    wire 	 f_kill;
  
-   wire [31:0] 	 f2d_pc, f2d_ir;
+   wire [31:0] 	 f2d_pc, f2d_pc_plus_4, f2d_ir;
    wire 	 f2d_ir_valid;
    wire [31:0] 	 x2f_pc_bra;
    wire 	 x2f_bra;
+   wire 	 f2d_valid;
+   
 
+   wire 	 f_stall_req;
    
    
    
@@ -64,10 +69,12 @@ module rv_cpu
       
       .f_stall_i(f_stall),
       .f_kill_i(f_kill),
+      .f_valid_o(f2d_valid),
       
       .f_ir_o(f2d_ir),
       .f_pc_o(f2d_pc),
-      .f_ir_valid_o(f2d_ir_valid),
+
+    //  .f_ir_valid_o(f2d_ir_valid),
       .x_pc_bra_i(x2f_pc_bra),
       .x_bra_i(x2f_bra)
       );
@@ -159,6 +166,7 @@ module rv_cpu
       .x_stall_i(x_stall),
       .x_kill_i(x_kill),
       .x_stall_req_o(x_stall_req),
+      .d_valid_i(f2d_valid),
    
       .d_pc_i(d2x_pc),
       .d_rd_i(d2x_rd),
@@ -194,13 +202,17 @@ module rv_cpu
       .dm_write_o(dm_write_o)
    );
 
+   wire 	 w_stall_req;
+   
+
    rv_writeback writeback
      (
       .clk_i(clk_i),
       .rst_i(rst_i),
 
       .w_stall_i(w_stall),
-
+      .w_stall_req_o(w_stall_req),
+      
       .x_fun_i(x2w_fun),
       .x_load_i(x2w_load),
   
@@ -210,28 +222,32 @@ module rv_cpu
       .x_dm_addr_i(x2w_dm_addr),
       
       .dm_data_l_i(dm_data_l_i),
+      .dm_valid_l_i(dm_valid_l_i),
 
       .rf_rd_value_o(rf_rd_value),
       .rf_rd_o(rf_rd),
       .rf_rd_write_o(rf_rd_write)
    );
 
-   reg 		 x_bra_d0;
+   reg 		 x2f_bra_d0;
 
-always@(posedge clk_i)
-  if(rst_i)
-    x_bra_d0 <= 0;
+   always@(posedge clk_i)
+     if(rst_i)
+       x2f_bra_d0 <= 0;
    else if (!x_stall)
-    x_bra_d0 <= x2f_bra;
+     x2f_bra_d0 <= x2f_bra;
      
    
-   assign f_stall = 0;
-   
-   assign x_stall = f_stall || (!f2d_ir_valid);
-   assign w_stall = x_stall;
+   assign f_stall =  x_stall_req || w_stall_req;
+   assign x_stall =  x_stall_req || w_stall_req;
+// || (!f2d_ir_valid);
+   assign w_stall = 0;
+ //x_stall_req;
 
-   assign x_kill = x2f_bra ;
+   assign x_kill = x2f_bra || x2f_bra_d0;
    assign f_kill = x2f_bra ;
+
+
    
 //&& ~x_bra_d0;
    

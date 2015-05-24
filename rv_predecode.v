@@ -25,42 +25,44 @@
 
 module rv_predecode 
 (
- input 	       clk_i,
- input 	       rst_i,
+ input 		  clk_i,
+ input 		  rst_i,
 
- input [31:0]  im_data_i,
+ input [31:0] 	  im_data_i,
  
- input [31:0]  f_ir_i,
- input [31:0]  f_pc_i,
+ input [31:0] 	  f_ir_i,
+ input [31:0] 	  f_pc_i,
+ input 		  f_stall_i,
+ 
 
- output [31:0] x_pc_o,
+ output [31:0] 	  x_pc_o,
   
- output [4:0]  rf_rs1_o,
- output [4:0]  rf_rs2_o,
+ output [4:0] 	  rf_rs1_o,
+ output [4:0] 	  rf_rs2_o,
 
- output [4:0]  x_rs1_o,
- output [4:0]  x_rs2_o,
+ output [4:0] 	  x_rs1_o,
+ output [4:0] 	  x_rs2_o,
  
- output [4:0]  x_rd_o,
+ output [4:0] 	  x_rd_o,
 
- output [4:0]  x_shamt_o,
- output reg [2:0]  x_fun_o,
+ output [4:0] 	  x_shamt_o,
+ output reg [2:0] x_fun_o,
 
- output [4:0]  x_opcode_o,
- output        x_shifter_sign_o,
+ output [4:0] 	  x_opcode_o,
+ output 	  x_shifter_sign_o,
  
- output [31:0] x_imm_i_o,
- output [31:0] x_imm_s_o,
- output [31:0] x_imm_b_o,
- output [31:0] x_imm_u_o,
- output [31:0] x_imm_j_o
+ output [31:0] 	  x_imm_i_o,
+ output [31:0] 	  x_imm_s_o,
+ output [31:0] 	  x_imm_b_o,
+ output [31:0] 	  x_imm_u_o,
+ output [31:0] 	  x_imm_j_o
  );
 
    wire [4:0]       f_opcode = f_ir_i[6:2];
    
    
-   assign rf_rs1_o = im_data_i [19:15];
-   assign rf_rs2_o = im_data_i [24:20];
+   assign rf_rs1_o = f_stall_i ? f_ir_i[19:15] : im_data_i [19:15];
+   assign rf_rs2_o = f_stall_i ? f_ir_i[24:20] : im_data_i [24:20];
   
    
    assign x_rs1_o = f_ir_i [19:15];

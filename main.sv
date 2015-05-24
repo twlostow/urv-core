@@ -41,7 +41,9 @@ module main;
    reg [31:0] dm_data_l;
    wire [3:0]  dm_data_select;
    wire        dm_write;
-   reg 	       dm_valid_l = 0;
+   reg 	       dm_valid_l = 1;
+   reg        dm_ready;
+   
    
 
    localparam int mem_size = 16384;
@@ -88,21 +90,24 @@ module main;
 	  mem [(dm_addr / 4) % mem_size][23:16] <= dm_data_s[23:16];
 	if(dm_write && dm_data_select[3])
 	  mem [(dm_addr / 4) % mem_size][31:24] <= dm_data_s[31:24];
+	
 
-	if(   $dist_uniform(seed, 0, 100 ) <= 50) begin
-	   dm_data_l <= mem[(dm_addr/4) % mem_size];
-	   dm_valid_l <= 1;
-	end else begin
-	   dm_data_l <= 32'hx;
-	   dm_valid_l <= 0;
-	end
 	
 	
 //	dm_data_l <= mem[(dm_addr/4) % mem_size];
 	
 	
-     end
+     end // always@ (posedge clk)
+
+
    
+   always@(posedge clk)
+     begin
+	dm_ready <= 1'b1; // $dist_uniform(seed, 0, 100 ) <= 50;
+
+	dm_data_l <= mem[(dm_addr/4) % mem_size];
+   end	   
+
    
    rv_cpu DUT
      (
@@ -119,8 +124,11 @@ module main;
       .dm_data_s_o(dm_data_s),
       .dm_data_l_i(dm_data_l),
       .dm_data_select_o(dm_data_select),
-      .dm_write_o(dm_write),
-      .dm_valid_l_i(dm_valid_l)
+      .dm_store_o(dm_write),
+      .dm_load_o(),
+      .dm_store_done_i(1'b1),
+      .dm_load_done_i(1'b1),
+      .dm_ready_i(dm_ready)
       );
 
    always #5ns clk <= ~clk;

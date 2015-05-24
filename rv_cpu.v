@@ -37,9 +37,12 @@ module rv_cpu
    output [31:0] dm_data_s_o,
    input [31:0]  dm_data_l_i,
    output [3:0]  dm_data_select_o,
-   output 	 dm_write_o,
-   input 	 dm_busy_s_i,
-   input 	 dm_valid_l_i
+   input 	 dm_ready_i,
+
+   output 	 dm_store_o,
+   output 	 dm_load_o,
+   input 	 dm_load_done_i,
+   input 	 dm_store_done_i 
    );
 
    wire 	 f_stall;
@@ -96,6 +99,8 @@ module rv_cpu
       .rst_i(rst_i),
 
       .im_data_i(im_data_i),
+
+      .f_stall_i(f_stall),
       .f_ir_i(f2d_ir),
       .f_pc_i(f2d_pc),
 
@@ -156,6 +161,8 @@ module rv_cpu
    wire [31:0] 	 x2w_dm_addr;
    wire 	 x2w_rd_write;
    wire [2:0] 	 x2w_fun;
+   wire 	 x2w_store;
+   
 
    
    rv_exec execute
@@ -190,6 +197,7 @@ module rv_cpu
    // Writeback stage I/F
       .w_fun_o(x2w_fun),
       .w_load_o(x2w_load),
+      .w_store_o(x2w_store),
    
       .w_dm_addr_o(x2w_dm_addr),
       .w_rd_o(x2w_rd),
@@ -199,7 +207,9 @@ module rv_cpu
       .dm_addr_o(dm_addr_o),
       .dm_data_s_o(dm_data_s_o),
       .dm_data_select_o(dm_data_select_o),
-      .dm_write_o(dm_write_o)
+      .dm_store_o(dm_store_o),
+      .dm_load_o(dm_load_o),
+      .dm_ready_i(dm_ready_i)
    );
 
    wire 	 w_stall_req;
@@ -215,15 +225,18 @@ module rv_cpu
       
       .x_fun_i(x2w_fun),
       .x_load_i(x2w_load),
-  
+      .x_store_i(x2w_store),
+      
       .x_rd_i(x2w_rd),
       .x_rd_value_i(x2w_rd_value),
       .x_rd_write_i(x2w_rd_write),
       .x_dm_addr_i(x2w_dm_addr),
       
       .dm_data_l_i(dm_data_l_i),
-      .dm_valid_l_i(dm_valid_l_i),
-
+      .dm_load_done_i(dm_load_done_i),
+      .dm_store_done_i(dm_store_done_i),
+      
+      
       .rf_rd_value_o(rf_rd_value),
       .rf_rd_o(rf_rd),
       .rf_rd_write_o(rf_rd_write)

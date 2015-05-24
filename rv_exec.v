@@ -55,6 +55,7 @@ module rv_exec
    // Writeback stage I/F
    output reg [2:0 ] w_fun_o,
    output reg 	     w_load_o,
+   output reg 	     w_store_o,
    
    output reg [4:0]  w_rd_o,
    output reg [31:0] w_rd_value_o,
@@ -65,8 +66,9 @@ module rv_exec
    output [31:0]     dm_addr_o,
    output [31:0]     dm_data_s_o,
    output [3:0]      dm_data_select_o,
-//   input [31:0]      dm_data_l_i,
-   output 	     dm_write_o   
+   output 	     dm_store_o,
+   output 	     dm_load_o,
+   input 	     dm_ready_i
    );
 
    wire [31:0] 	 rs1, rs2;
@@ -84,7 +86,6 @@ module rv_exec
    reg [31:0] 	 branch_target;
 
    reg [31:0] 	 dm_addr, dm_data_s, dm_select_s;
-   reg 	     dm_write_s;
 
    reg 	     rd_write;
    
@@ -237,21 +238,9 @@ module rv_exec
      shifter_req_d0 <= shifter_req;
    
    wire shifter_stall_req = shifter_req && !shifter_req_d0;
-// && !shifter_req_d0;
-
-/*   always@(posedge clk_i)
-     if(shifter_req)
-       $display("%08x: shifter op %x fun %x %x op1 %x op2 %x", d_pc_i, d_opcode_i, d_fun_i, d_shifter_sign_i, alu_op1, alu_op2);
-
-   always@(posedge clk_i)
-     if(shifter_req_d0)
-       $display("%08x: shifter result %x", d_pc_i, shifter_result);
-*/
- 
-       
    
    // rdest write value
-  always@*
+   always@*
     begin
        case (d_opcode_i)
 	 `OPC_OP_IMM, `OPC_OP, `OPC_JAL, `OPC_JALR, `OPC_LUI, `OPC_AUIPC:
@@ -260,35 +249,13 @@ module rv_exec
 	      rd_write <= 1;
 	   end
 	 
-/*	 `OPC_JAL, `OPC_JALR: 
-	   begin
-	      rd_value <= d_pc_i + 4;
-	      rd_write <= 1;
-	   end
-	 
-	 `OPC_LUI: 
-	   begin
-	      rd_value <= { d_imm_u_i[31:12] , 12'h0 };
-	      rd_write <= 1;
-	   end
-	      
-	 `OPC_AUIPC:
-	   begin
-	      rd_value <= d_pc_i + { d_imm_u_i[31:12], 12'h0 };
-	      rd_write <= 1;
-	   end
-	 */
-	 
 	 default: 
 	   begin
 	    rd_value <= 32'hx;
 	    rd_write <= 0;
 	   end
-	 
-	 
        endcase
     end
-
 
    // generate load/store address
    always@*
@@ -304,7 +271,7 @@ module rv_exec
    // generate store value/select
    always@*
      begin
-	  case (d_fun_i)
+	case (d_fun_i)
 	  `LDST_B: 
 	    begin
 	       dm_data_s <= { rs2[7:0], rs2[7:0], rs2[7:0], rs2[7:0] };
@@ -341,28 +308,27 @@ module rv_exec
 
    //branch decision
    always@*
-       case (d_opcode_i)
-	 `OPC_JAL, `OPC_JALR: 
-	   branch_take <= 1;
-	 `OPC_BRANCH:
-	   branch_take <= branch_condition_met;
-	 default: 
-	   branch_take <= 0;
-       endcase // case (d_opcode_i)
+     case (d_opcode_i)
+       `OPC_JAL, `OPC_JALR: 
+	 branch_take <= 1;
+       `OPC_BRANCH:
+	 branch_take <= branch_condition_met;
+       default: 
+	 branch_take <= 0;
+     endcase // case (d_opcode_i)
      
    
-   // generate store write
-
-   always@*
-     begin
-	dm_write_s <= ( (d_opcode_i == `OPC_STORE) && !x_stall_i && d_valid_i);
-     end
+   // generate load/store requests
 
    assign dm_addr_o = dm_addr;
    assign dm_data_s_o = dm_data_s;
    assign dm_data_select_o = dm_select_s;
-   assign dm_write_o = dm_write_s;
 
+   wire is_load = (d_opcode_i == `OPC_LOAD ? 1: 0) && d_valid_i && !x_kill_i;
+   wire is_store = (d_opcode_i == `OPC_STORE ? 1: 0) && d_valid_i && !x_kill_i;
+
+   assign dm_load_o = is_load;
+   assign dm_store_o = is_store;
    
    always@(posedge clk_i) 
       if (rst_i) begin
@@ -372,7 +338,9 @@ module rv_exec
 	 w_rd_o <= 0;
 	 w_fun_o <= 0;
 	 w_load_o <= 0;
+	 w_store_o <= 0;
 	 w_dm_addr_o <= 0;
+	 
 	 
       end else if (!x_stall_i) begin
 	 f_branch_target_o <= branch_target;
@@ -386,16 +354,19 @@ module rv_exec
 	 w_rd_write_o <= rd_write && !x_kill_i && d_valid_i;
 
 	 w_fun_o <= d_fun_i;
-	 w_load_o <= (d_opcode_i == `OPC_LOAD ? 1: 0) && d_valid_i && !x_kill_i;
+	 w_load_o <= is_load;
+	 w_store_o <= is_store;
+	 
 	 w_dm_addr_o <= dm_addr;
 	 
       end else begin // if (!x_stall_i)
 	 f_branch_take_o <= 0;
 	 w_rd_write_o <= 0;
 	 w_load_o <= 0;
+	 w_store_o <= 0;
       end
 
-   assign x_stall_req_o = shifter_stall_req;
+   assign x_stall_req_o = shifter_stall_req || ((is_store || is_load) && !dm_ready_i);
 
 
 endmodule

@@ -107,7 +107,11 @@ module rv_regfile
 
  input [4:0]   w_rd_i,
  input [31:0]  w_rd_value_i,
- input 	       w_rd_store_i
+ input 	       w_rd_store_i,
+
+ input 	       w_bypass_rd_write_i,
+ input [31:0]  w_bypass_rd_value_i
+ 
  );
 
 
@@ -140,12 +144,11 @@ module rv_regfile
       
 
    
-   wire 	  rs1_bypass = write && (/*(w_rd_i == rf_rs1_i) ||*/ (w_rd_i == d_rs1_i));
-   wire 	  rs2_bypass = write && (/*(w_rd_i == rf_rs2_i) ||*/ (w_rd_i == d_rs2_i));
+   wire 	  rs1_bypass = w_bypass_rd_write_i && (w_rd_i == d_rs1_i);
+   wire 	  rs2_bypass = w_bypass_rd_write_i && (w_rd_i == d_rs2_i);
    
-   
-   assign x_rs1_value_o = rs1_bypass ? w_rd_value_i : rs1_regfile;
-   assign x_rs2_value_o = rs2_bypass ? w_rd_value_i : rs2_regfile;
+   assign x_rs1_value_o = rs1_bypass ? w_bypass_rd_value_i : rs1_regfile;
+   assign x_rs2_value_o = rs2_bypass ? w_bypass_rd_value_i : rs2_regfile;
 
 endmodule // rv_regfile
 

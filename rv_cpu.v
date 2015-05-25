@@ -127,11 +127,27 @@ module rv_cpu
       .x_imm_j_o(d2x_imm_j)
       );
 
+      wire [4:0] 	 x2w_rd;
+   wire [31:0] 	 x2w_rd_value;
+   wire [31:0] 	 x2w_dm_addr;
+   wire 	 x2w_rd_write;
+   wire [2:0] 	 x2w_fun;
+   wire 	 x2w_store;
+   wire 	 x2w_load;
+      
+
    wire [31:0] 	 x_rs2_value, x_rs1_value;
    
    wire [4:0] 	 rf_rd;
    wire [31:0] 	 rf_rd_value;
    wire 	 rf_rd_write;
+
+
+
+   wire [31:0] 	 rf_bypass_rd_value = rf_rd_value;
+ //x2w_rd_value;
+   wire  	 rf_bypass_rd_write = rf_rd_write && !x2w_load;
+// x2w_rd_write && !w_stall;
 
    
    rv_regfile regfile
@@ -153,15 +169,14 @@ module rv_cpu
 
       .w_rd_i(rf_rd),
       .w_rd_value_i(rf_rd_value),
-      .w_rd_store_i(rf_rd_write)
+      .w_rd_store_i(rf_rd_write),
+
+      .w_bypass_rd_write_i(rf_bypass_rd_write),
+      .w_bypass_rd_value_i(rf_bypass_rd_value)
       );
 
-   wire [4:0] 	 x2w_rd;
-   wire [31:0] 	 x2w_rd_value;
-   wire [31:0] 	 x2w_dm_addr;
-   wire 	 x2w_rd_write;
-   wire [2:0] 	 x2w_fun;
-   wire 	 x2w_store;
+   
+   wire 	 x_load_comb;
    
 
    
@@ -194,6 +209,8 @@ module rv_cpu
       .f_branch_target_o (x2f_pc_bra), // fixme: consistent naming
       .f_branch_take_o (x2f_bra),
 
+
+      .x_load_o(x_load_comb),
    // Writeback stage I/F
       .w_fun_o(x2w_fun),
       .w_load_o(x2w_load),
@@ -250,9 +267,22 @@ module rv_cpu
    else if (!x_stall)
      x2f_bra_d0 <= x2f_bra;
      
+// load to Rd in W stage while Rs1/Rs2==RD in fetch stage: assert interlock
+   reg 		 interlock_load;
+   reg 		 interlock_load_d0 = 0;
+
    
-   assign f_stall =  x_stall_req || w_stall_req;
+
+   always@*
+     interlock_load <= x_load_comb && ((d2x_rd == rf_rs1) || (d2x_rd == rf_rs2));
+
+   always@(posedge clk_i)
+     interlock_load_d0 <= interlock_load;
+   
+   
+   assign f_stall =  x_stall_req || w_stall_req || (interlock_load && !interlock_load_d0);
    assign x_stall =  x_stall_req || w_stall_req;
+// || (interlock_load && !interlock_load_d0);
 // || (!f2d_ir_valid);
    assign w_stall = 0;
  //x_stall_req;
@@ -260,6 +290,8 @@ module rv_cpu
    assign x_kill = x2f_bra || x2f_bra_d0;
    assign f_kill = x2f_bra ;
 
+   
+   
 
    
 //&& ~x_bra_d0;

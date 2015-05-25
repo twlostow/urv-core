@@ -35,6 +35,7 @@ module rv_exec
    input [4:0] 	     d_rd_i,
    input [2:0] 	     d_fun_i,
 
+   
    input [31:0]      rf_rs1_value_i,
    input [31:0]      rf_rs2_value_i,
 
@@ -52,6 +53,8 @@ module rv_exec
    output reg [31:0] f_branch_target_o,
    output reg 	     f_branch_take_o,
 
+   output 	     x_load_o,
+   
    // Writeback stage I/F
    output reg [2:0 ] w_fun_o,
    output reg 	     w_load_o,
@@ -92,15 +95,15 @@ module rv_exec
    wire cmp_sign_ext = ( ( d_opcode_i == `OPC_BRANCH) && ( ( d_fun_i == `BRA_GE )|| (d_fun_i == `BRA_LT ) ) )
 	|| ( ( (d_opcode_i == `OPC_OP) || (d_opcode_i == `OPC_OP_IMM) ) && (d_fun_i == `FUNC_SLT ) );
    
-   wire [32:0] cmp_op1 = { cmp_sign_ext ? alu_op1[31] : 1'b0, alu_op1 };
-   wire [32:0] cmp_op2 = { cmp_sign_ext ? alu_op2[31] : 1'b0, alu_op2 };
+   wire [32:0] cmp_op1 = { cmp_sign_ext ? rs1[31] : 1'b0, rs1 };
+   wire [32:0] cmp_op2 = { cmp_sign_ext ? rs2[31] : 1'b0, rs2 };
 
-   wire cmp_equal = (cmp_op1 == cmp_op2);
-   wire cmp_lt = ($signed(cmp_op1) < $signed(cmp_op2));
+   wire [32:0] cmp_rs = cmp_op1 - cmp_op2;
+   
+   wire        cmp_equal = (cmp_op1 == cmp_op2);
+   wire        cmp_lt = cmp_rs[32];
 
-   
-   
-	// branch condition decoding   
+   // branch condition decoding   
    always@*
      case (d_fun_i)
        `BRA_EQ: branch_condition_met <= cmp_equal;
@@ -112,20 +115,6 @@ module rv_exec
        default: branch_condition_met <= 0;
      endcase // case (d_fun_i)
    
-/* -----\/----- EXCLUDED -----\/-----
-// branch condition decoding   
-   always@*
-     case (d_fun_i)
-       `BRA_EQ: branch_condition_met <= (rs1 == rs2);
-       `BRA_NEQ: branch_condition_met <= ~(rs1 == rs2);
-       `BRA_GE: branch_condition_met <= ($signed(rs1) >= $signed(rs2));
-       `BRA_LT: branch_condition_met <= ($signed(rs1) < $signed(rs2));
-       `BRA_GEU: branch_condition_met <= (rs1 >= rs2);
-       `BRA_LTU: branch_condition_met <= (rs1 < rs2);
-       default: branch_condition_met <= 0;
-     endcase // case (d_fun_i)
- -----/\----- EXCLUDED -----/\----- */
-
    always@*
      case (d_opcode_i)
        `OPC_JAL: branch_target <= d_pc_i + d_imm_j_i;
@@ -135,24 +124,6 @@ module rv_exec
        default: branch_target<= 32'hx;
      endcase // case (d_opcode_i)
 
-/* -----\/----- EXCLUDED -----\/-----
-  rd_value <= d_pc_i + 4;
-	      rd_write <= 1;
-	   end
- -----/\----- EXCLUDED -----/\----- *-/
-	 
-	 `OPC_LUI: 
-	   begin
-	      rd_value <= { d_imm_u_i[31:12] , 12'h0 };
-	      rd_write <= 1;
-	   end
-	 
-	      
-	 `OPC_AUIPC:
-	   begin
-	      rd_value <= d_pc_i + { d_imm_u_i[31:12], 12'h0 };
- -----/\----- EXCLUDED -----/\----- */
-   
    // decode ALU operands
    always@*
      begin
@@ -164,9 +135,6 @@ module rv_exec
 	  default: alu_op1 <= rs1;
 	endcase // case (d_opcode_i)
 	
-   
-	      
-//alu_op1 <= rs1;
 
 	case (d_opcode_i)
 	  `OPC_LUI: alu_op2 <= 0;
@@ -177,40 +145,42 @@ module rv_exec
 	  default: alu_op2 <= rs2;
 	endcase // case (d_opcode_i)
 	
-	 
-	//alu_op2 <= (d_opcode_i == `OPC_OP_IMM) ? d_imm_i_i : rs2;
-	  //endcase
-	    
      end
 
-   wire is_subtract = (d_opcode_i == `OPC_OP && d_shifter_sign_i);
-     wire[31:0] shifter_result;
+   wire is_add = !((d_opcode_i == `OPC_OP && d_fun_i == `FUNC_ADD && d_shifter_sign_i) || (d_fun_i == `FUNC_SLT) || (d_fun_i == `FUNC_SLTU));
+   
+   wire[31:0] shifter_result;
 
+   wire alu_op_signext = (d_fun_i == `FUNC_SLT);
+
+   wire [32:0] alu_addsub_op1 = {alu_op_signext ? alu_op1[31] : 1'b0, alu_op1 };
+   wire [32:0] alu_addsub_op2 = {alu_op_signext ? alu_op2[31] : 1'b0, alu_op2 };
+
+
+   
+   reg [32:0]  alu_addsub_result;
+
+   always@*
+     if(is_add)
+       alu_addsub_result <= alu_addsub_op1 + alu_addsub_op2;
+     else
+       alu_addsub_result <= alu_addsub_op1 - alu_addsub_op2;
+   
+   
    // the ALU itself
    always@*
      begin
 	case (d_fun_i)
 	  `FUNC_ADD:
-	    if(is_subtract)
-	      alu_result <= alu_op1 - alu_op2;
-	    else
-	      alu_result <= alu_op1 + alu_op2;
+	    alu_result <= alu_addsub_result[31:0];
 	      
 	  `FUNC_XOR: alu_result <= alu_op1 ^ alu_op2;
 	  `FUNC_OR: alu_result <= alu_op1 | alu_op2;
 	  `FUNC_AND: alu_result <= alu_op1 & alu_op2;
-	  `FUNC_SLT: alu_result <= cmp_lt ? 1 : 0;
-	  `FUNC_SLTU: alu_result <= cmp_lt ? 1 : 0;
+	  `FUNC_SLT: alu_result <= alu_addsub_result[32]?1:0;
+	  `FUNC_SLTU: alu_result <= alu_addsub_result[32]?1:0;
 	  `FUNC_SL, `FUNC_SR: alu_result <= shifter_result;
 	  
-/*	  `FUNC_SL: alu_result <= alu_op1 << alu_op2[4:0];
-	  `FUNC_SR:
-	    begin
-	       if(d_shifter_sign_i)
-		 alu_result <= $signed(alu_op1) >>> alu_op2[4:0];
-	       else
-		 alu_result <= alu_op1 >> alu_op2[4:0];
-	    end*/
 
 	  default: alu_result <= 32'hx;
 	endcase // case (d_fun_i)
@@ -366,8 +336,11 @@ module rv_exec
 	 w_store_o <= 0;
       end
 
+   
    assign x_stall_req_o = shifter_stall_req || ((is_store || is_load) && !dm_ready_i);
-
+   assign x_load_o = is_load;
+   
+   
 
 endmodule
 	       

@@ -34,6 +34,7 @@ add wave -noupdate -expand -group cpu /main/DUT/d2x_imm_s
 add wave -noupdate -expand -group cpu /main/DUT/d2x_imm_b
 add wave -noupdate -expand -group cpu /main/DUT/d2x_imm_u
 add wave -noupdate -expand -group cpu /main/DUT/d2x_imm_j
+add wave -noupdate /main/DUT/interlock_load
 add wave -noupdate -expand -group fetch /main/DUT/fetch/clk_i
 add wave -noupdate -expand -group fetch /main/DUT/fetch/rst_i
 add wave -noupdate -expand -group fetch /main/DUT/fetch/im_addr_o
@@ -81,8 +82,11 @@ add wave -noupdate -expand -group regfile /main/DUT/regfile/x_rs2_value_o
 add wave -noupdate -expand -group regfile /main/DUT/regfile/w_rd_i
 add wave -noupdate -expand -group regfile /main/DUT/regfile/w_rd_value_i
 add wave -noupdate -expand -group regfile /main/DUT/regfile/w_rd_store_i
+add wave -noupdate -expand -group regfile /main/DUT/regfile/w_bypass_rd_write_i
+add wave -noupdate -expand -group regfile /main/DUT/regfile/w_bypass_rd_value_i
 add wave -noupdate -expand -group regfile /main/DUT/regfile/rs1_regfile
 add wave -noupdate -expand -group regfile /main/DUT/regfile/rs2_regfile
+add wave -noupdate -expand -group regfile /main/DUT/regfile/write
 add wave -noupdate -expand -group regfile /main/DUT/regfile/rs1_bypass
 add wave -noupdate -expand -group regfile /main/DUT/regfile/rs2_bypass
 add wave -noupdate /main/DUT/regfile/bank0/ram
@@ -156,7 +160,6 @@ add wave -noupdate -expand -group execute /main/DUT/execute/cmp_op1
 add wave -noupdate -expand -group execute /main/DUT/execute/cmp_op2
 add wave -noupdate -expand -group execute /main/DUT/execute/cmp_equal
 add wave -noupdate -expand -group execute /main/DUT/execute/cmp_lt
-add wave -noupdate -expand -group execute /main/DUT/execute/is_subtract
 add wave -noupdate -expand -group execute /main/DUT/execute/shifter_result
 add wave -noupdate -expand -group execute /main/DUT/execute/shifter_req_d0
 add wave -noupdate -expand -group execute /main/DUT/execute/shifter_req
@@ -182,7 +185,7 @@ add wave -noupdate -expand -group writeback /main/DUT/writeback/rf_rd_o
 add wave -noupdate -expand -group writeback /main/DUT/writeback/rf_rd_write_o
 add wave -noupdate -expand -group writeback /main/DUT/writeback/load_value
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {13680175 ps} 0}
+WaveRestoreCursors {{Cursor 1} {13948780 ps} 0}
 configure wave -namecolwidth 250
 configure wave -valuecolwidth 100
 configure wave -justifyvalue left
@@ -197,4 +200,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {13606882 ps} {13751520 ps}
+WaveRestoreZoom {13882681 ps} {14027319 ps}

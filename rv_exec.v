@@ -30,7 +30,7 @@ module rv_exec
    input 	     x_stall_i,
    input 	     x_kill_i,
    output 	     x_stall_req_o,
-		     w_stall_req_i,
+input		     w_stall_req_i,
    
    
    input [31:0]      d_pc_i,
@@ -230,12 +230,8 @@ module rv_exec
    // generate load/store address
    always@*
      begin
-	case (d_opcode_i) 
-	  `OPC_LOAD: dm_addr <= rs1 + d_imm_i;
-	  `OPC_STORE: dm_addr <= rs1 + d_imm_i;
-	  default: dm_addr <= 32'hx;
-	  
-	endcase // case (d_opcode_i)
+	dm_addr <=  rs1 + $signed(d_imm_i[11:0]);
+
      end
 
    // generate store value/select

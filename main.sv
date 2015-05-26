@@ -222,7 +222,18 @@ module main;
    endfunction // s_hex
 
    reg[31:0] dm_addr_d0;
+        integer f_console, f_exec_log;
    
+   initial begin
+      f_console = $fopen("console.txt","wb");
+      f_exec_log = $fopen("exec_log.txt","wb");
+      
+      #500us;
+
+//      $fclose(f_console);
+     
+
+   end
 
    always@(posedge clk)
      begin
@@ -230,8 +241,11 @@ module main;
 	  begin
 	dm_addr_d0 <= dm_addr;
 	
-	if(dm_write)
+	if(dm_write)begin
 	  $display("DM Write addr %x data %x", dm_addr, dm_data_s);
+	  $fwrite(f_exec_log,"DM Write addr %x data %x\n", dm_addr, dm_data_s);
+	end
+	     
 	if (DUT.writeback.x_load_i && DUT.writeback.rf_rd_write_o)
 	  begin
 /* -----\/----- EXCLUDED -----\/-----
@@ -244,27 +258,19 @@ module main;
 	     
 
      $display("DM Load addr %x data %x -> %s", dm_addr_d0, DUT.writeback.rf_rd_value_o, decode_regname(DUT.writeback.x_rd_i));
+	    $fwrite(f_exec_log, "DM Load addr %x data %x -> %s\n", dm_addr_d0, DUT.writeback.rf_rd_value_o, decode_regname(DUT.writeback.x_rd_i));
 	  end
 	end
      end
    
-   integer f_console;
    
-   initial begin
-      f_console = $fopen("console.txt","wb");
-      #500us;
 
-//      $fclose(f_console);
-     
-
-   end
-   
    
    always@(posedge clk)
      if(dm_write && dm_addr == 'h100000)
        begin
 	  $display("\n ****** TX '%c' \n", dm_data_s[7:0]) ;
-//	  byte x = dm_data_s[7:0];
+	  $fwrite(f_exec_log,"\n ****** TX '%c' \n", dm_data_s[7:0]) ;
 	  $fwrite(f_console,"%c", dm_data_s[7:0]);
 	  $fflush(f_console);
 	  
@@ -359,9 +365,10 @@ module main;
 	  endcase // case (d2x_opcode)
 
 	  $display("%08x: %-8s %-3s %s", DUT.execute.d_pc_i, opc, fun, args);
+  	  $fwrite(f_exec_log,"%08x: %-8s %-3s %s\n", DUT.execute.d_pc_i, opc, fun, args);
 	  
 	  
-	  
+
 	  
        end
  

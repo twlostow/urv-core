@@ -52,7 +52,7 @@ module rv_decode
  output reg [4:0]  x_shamt_o,
  output reg [2:0]  x_fun_o,
 
- output reg [4:0]  x_opcode_o,
+ output [4:0]  x_opcode_o,
  output reg 	   x_shifter_sign_o,
  
  output reg [31:0] x_imm_o,
@@ -69,12 +69,13 @@ module rv_decode
    reg [4:0] x_rs1;
    reg [4:0] x_rs2;
    reg [4:0] x_rd;
-
+   reg [4:0] x_opcode;
    
    assign x_rs1_o = x_rs1;
    assign x_rs2_o = x_rs2;
    assign x_rd_o = x_rd;
-   
+   assign x_opcode_o = x_opcode;
+
    always@*
      if(d_stall_i)
        begin
@@ -99,7 +100,7 @@ module rv_decode
    
    always@(posedge clk_i)
      if(!d_stall_i)
-       x_load_hazard_o <= ( (f_rs1 == x_rd)  || (f_rs2 == x_rd) ) && (!d_kill_i) && (d_opcode == `OPC_LOAD);
+       x_load_hazard_o <= ( (f_rs1 == x_rd)  || (f_rs2 == x_rd) ) && (!d_kill_i) && (x_opcode == `OPC_LOAD);
    
 
    always@(posedge clk_i)
@@ -108,7 +109,7 @@ module rv_decode
 	  x_rs1 <= f_rs1;
 	  x_rs2 <= f_rs2;
 	  x_rd <= f_ir_i [11:7];
-	  x_opcode_o <= d_opcode;
+	  x_opcode <= d_opcode;
 	  x_shamt_o <= f_ir_i[24:20];
        end
    

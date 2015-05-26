@@ -158,10 +158,7 @@ module rv_cpu
 
 
    wire [31:0] 	 rf_bypass_rd_value = x2w_rd_value;
- //x2w_rd_value;
    wire  	 rf_bypass_rd_write = rf_rd_write && !x2w_load;
-// x2w_rd_write && !w_stall;
-
    
    rv_regfile regfile
      (

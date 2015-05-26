@@ -85,6 +85,8 @@ module rv_decode
 	  rf_rs1_o <= f_rs1;
 	  rf_rs2_o <= f_rs2;
        end
+   reg[31:0] x_ir;
+   
    
    always@(posedge clk_i)
      if(rst_i)
@@ -94,6 +96,8 @@ module rv_decode
        end else if(!d_stall_i) begin
 	  x_valid_o <= f_valid_i && !d_kill_i;
 	  x_pc_o <= f_pc_i;
+	  x_ir <= f_ir_i;
+	  
        end
 
    wire [4:0] d_opcode = f_ir_i[6:2];

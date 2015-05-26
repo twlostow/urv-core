@@ -55,7 +55,7 @@ input		     w_stall_req_i,
    input 	     d_is_shift_i,
 
    output reg [31:0] f_branch_target_o,
-   output reg 	     f_branch_take_o,
+   output  	     f_branch_take_o,
 
    output 	     w_load_hazard_o,
    
@@ -104,6 +104,9 @@ input		     w_stall_req_i,
    wire        cmp_equal = (cmp_op1 == cmp_op2);
    wire        cmp_lt = cmp_rs[32];
 
+   reg 	       f_branch_take;
+   
+   
    // branch condition decoding   
    always@*
      case (d_fun_i)
@@ -203,9 +206,11 @@ input		     w_stall_req_i,
       );
 
 
-
    always@(posedge clk_i)
-     shifter_req_d0 <= shifter_req;
+     if(shifter_req_d0 && !x_stall_i)
+       shifter_req_d0 <= 0;
+     else
+       shifter_req_d0 <= shifter_req;
    
    wire shifter_stall_req = shifter_req && !shifter_req_d0;
    
@@ -230,7 +235,8 @@ input		     w_stall_req_i,
    // generate load/store address
    always@*
      begin
-	dm_addr <=  rs1 + $signed(d_imm_i[11:0]);
+	dm_addr <=  rs1 + d_imm_i;
+//[11:0]);
 
      end
 
@@ -299,7 +305,7 @@ input		     w_stall_req_i,
    always@(posedge clk_i) 
       if (rst_i) begin
 	 f_branch_target_o <= 0;
-	 f_branch_take_o <= 0;
+	 f_branch_take   <= 0;
 	 w_rd_write_o <= 0;
 	 w_rd_o <= 0;
 	 w_fun_o <= 0;
@@ -310,7 +316,7 @@ input		     w_stall_req_i,
 	 
       end else if (!x_stall_i) begin
 	 f_branch_target_o <= branch_target;
-	 f_branch_take_o <= branch_take && !x_kill_i && d_valid_i;
+	 f_branch_take <= branch_take && !x_kill_i && d_valid_i;
 
 	 w_rd_o <= d_rd_i;
 	 
@@ -326,16 +332,18 @@ input		     w_stall_req_i,
 	 w_dm_addr_o <= dm_addr;
 	 
       end else begin // if (!x_stall_i)
-	 f_branch_take_o <= 0;
+	 f_branch_take   <= 0;
 	 w_rd_write_o <= 0;
 	 w_load_o <= 0;
 	 w_store_o <= 0;
   
 end // else: !if(rst_i)
+
+   assign f_branch_take_o = f_branch_take;
    
 
    
-   assign x_stall_req_o = shifter_stall_req || ((is_store || is_load) && !dm_ready_i);
+   assign x_stall_req_o = !f_branch_take && (shifter_stall_req || ((is_store || is_load) && !dm_ready_i));
    assign w_load_hazard_o = d_load_hazard_i;
    
 

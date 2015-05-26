@@ -217,6 +217,36 @@ module main;
    endfunction // decode_regname
    
 
+   task automatic verify_branch(input [31:0] rs1, input[31:0] rs2, input take, input [2:0] fun);
+      int do_take;
+
+      case(fun)
+	`BRA_EQ: do_take = (rs1 == rs2);
+	`BRA_NEQ: do_take = (rs1 != rs2);
+	`BRA_GE: do_take = $signed(rs1) >= $signed(rs2);
+	`BRA_LT: do_take = $signed(rs1) < $signed(rs2);
+	`BRA_GEU: do_take = rs1 >= rs2;
+	`BRA_LTU: do_take = rs1 < rs2;
+	default:
+	  begin
+	     $error("illegal branch func");
+	     $stop;
+	  end
+	
+      endcase // case (func)
+
+      if(do_take != take)
+	begin
+	   $error("fucked up jump");
+	   $stop;
+
+	end
+      
+      
+   endtask // verify_branch
+   
+   		 
+   
    function automatic string s_hex(int x);
       return $sformatf("%s0x%-08x", x<0?"-":" ", (x<0)?(-x):x);
    endfunction // s_hex
@@ -345,7 +375,11 @@ module main;
 		 opc = "branch";
 		 fun = decode_cond(DUT.d2x_fun);
 //decode_op(DUT.d2x_fun);
-		 args = $sformatf("%-3s %-3s 0x%-08x %s", rs1, rs2, DUT.execute.branch_target, DUT.execute.branch_take?"TAKE":"IGNORE");
+		 args = $sformatf("%-3s %-3s 0x%-08x rs1 %s", rs1, rs2, DUT.execute.branch_target, DUT.execute.branch_take?"TAKE":"IGNORE");
+
+		 verify_branch(DUT.execute.rs1, DUT.execute.rs2, DUT.execute.branch_take,DUT.d2x_fun);
+		 
+		 
 	      end
 	    `OPC_LOAD: 
 	      begin 
@@ -366,6 +400,7 @@ module main;
 
 	  $display("%08x: %-8s %-3s %s", DUT.execute.d_pc_i, opc, fun, args);
   	  $fwrite(f_exec_log,"%08x: %-8s %-3s %s\n", DUT.execute.d_pc_i, opc, fun, args);
+	  $fwrite(f_exec_log,": PC %08x OP %08x\n", DUT.execute.d_pc_i, DUT.decode.x_ir);
 	  
 	  
 

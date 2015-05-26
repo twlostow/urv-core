@@ -31,8 +31,12 @@ module rv_fetch
 
  input 		   f_stall_i,
  input 		   f_kill_i,
- 
 
+ output reg [4:0]  rf_rs1_o,
+ output reg [4:0]  rf_rs2_o,
+
+ output reg 	   f_load_hazard_o,
+ 
  output [31:0] 	   f_ir_o,
  output reg [31:0] f_pc_o,
  output reg [31:0] f_pc_plus_4_o,
@@ -44,12 +48,30 @@ module rv_fetch
 );
 
    reg [31:0] pc;
-   reg [31:0] ir, ir_d0;
+   reg [31:0] ir;
    reg 	      rst_d;
-   
 
-   reg 	       im_valid_d0;
-//   wire [31:0] pc_next = (x_bra_i ? x_pc_bra_i : ( ( f_stall_i || !im_valid_i ) ? pc : pc + 4));
+   wire [4:0] rs1_mem = im_data_i[19:15];
+   wire [4:0] rs2_mem = im_data_i[24:20];
+
+   wire [4:0] rd = ir [11:7];
+   
+   always@*
+     if(!f_stall_i)
+       begin
+	  rf_rs1_o <= im_data_i [19:15];
+	  rf_rs2_o <= im_data_i [24:20];
+       end else begin
+	  rf_rs1_o <= ir[19:15];
+	  rf_rs2_o <= ir[24:20];
+       end
+
+   always@*
+     f_load_hazard_o <= ( (rs1_mem == rd)  || (rs2_mem == rd) ) && !f_kill_i;
+   
+ 
+
+  
 
    reg [31:0]  pc_next;
 
@@ -77,8 +99,6 @@ module rv_fetch
      end else begin
 	rst_d <= 1;
 
-	
-	
 	if (!f_stall_i) begin
 	      
 	   pc <= pc_next;
@@ -86,19 +106,12 @@ module rv_fetch
 
 	   if(im_valid_i) begin
 	      ir <= im_data_i; // emit nop
-	      ir_d0 <= ir;
-	      
 	      f_valid_o <= (rst_d && !f_kill_i);
-	   
 	   end else begin// if (i_valid_i)
 	      f_valid_o <= 0;
 	   end
 	   
-	end else begin // if (!f_stall_i)
-//	   f_stall_req_o <= 0;
-	   
-
-	end // else: !if(!f_stall_i)
+	end 
      end // else: !if(rst_i)
 
 

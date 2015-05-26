@@ -29,7 +29,8 @@ module rv_exec
 
    input 	     x_stall_i,
    input 	     x_kill_i,
-   output 	     x_stall_req_o, 
+   output 	     x_stall_req_o,
+   
    
    input [31:0]      d_pc_i,
    input [4:0] 	     d_rd_i,
@@ -312,7 +313,8 @@ module rv_exec
 	 w_dm_addr_o <= 0;
 	 
 	 
-      end else if (!x_stall_i) begin
+      end 
+else begin //if (!x_stall_i) begin
 	 f_branch_target_o <= branch_target;
 	 f_branch_take_o <= branch_take && !x_kill_i && d_valid_i;
 
@@ -320,25 +322,29 @@ module rv_exec
 	 
 //	 if(!shifter_stall_req)
 	 w_rd_value_o <= rd_value;
-	 
 	 w_rd_write_o <= rd_write && !x_kill_i && d_valid_i;
 
 	 w_fun_o <= d_fun_i;
-	 w_load_o <= is_load;
+   w_load_o <= is_load;
+   
 	 w_store_o <= is_store;
 	 
 	 w_dm_addr_o <= dm_addr;
 	 
-      end else begin // if (!x_stall_i)
-	 f_branch_take_o <= 0;
-	 w_rd_write_o <= 0;
-	 w_load_o <= 0;
-	 w_store_o <= 0;
-      end
+//      end else begin // if (!x_stall_i)
+//	 f_branch_take_o <= 0;
+//	 w_rd_write_o <= 0;
+//	 w_load_o <= 0;
+//	 w_store_o <= 0;
+  //    end
+end // else: !if(rst_i)
+   
 
    
    assign x_stall_req_o = shifter_stall_req || ((is_store || is_load) && !dm_ready_i);
-   assign x_load_o = is_load;
+   assign x_load_o =  is_load;
+
+
    
    
 

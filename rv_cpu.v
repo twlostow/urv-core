@@ -61,6 +61,17 @@ module rv_cpu
    wire 	 f_stall_req;
    
    
+   wire [31:0] 	 d2x_pc;
+   wire [4:0] 	 rf_rs1, d2x_rs1;
+   wire [4:0] 	 rf_rs2, d2x_rs2;
+   wire [4:0] 	 d2x_rd;
+   wire [4:0] 	 d2x_shamt;
+   wire [2:0] 	 d2x_fun;
+   wire [4:0] 	 d2x_opcode;
+   wire 	 d2x_shifter_sign;
+   wire [31:0] 	 d2x_imm_i, d2x_imm_s, d2x_imm_u, d2x_imm_b, d2x_imm_j;
+   
+   wire 	 f_load_hazard;
    
    rv_fetch fetch
      (
@@ -69,6 +80,10 @@ module rv_cpu
       .im_addr_o(im_addr_o),
       .im_data_i(im_data_i),
       .im_valid_i(im_valid_i),
+
+      .rf_rs1_o(rf_rs1),
+      .rf_rs2_o(rf_rs2),
+      .f_load_hazard_o(f_load_hazard),
       
       .f_stall_i(f_stall),
       .f_kill_i(f_kill),
@@ -82,33 +97,18 @@ module rv_cpu
       .x_bra_i(x2f_bra)
       );
 
-   wire [31:0] 	 d2x_pc;
-   wire [4:0] 	 rf_rs1, d2x_rs1;
-   wire [4:0] 	 rf_rs2, d2x_rs2;
-   wire [4:0] 	 d2x_rd;
-   wire [4:0] 	 d2x_shamt;
-   wire [2:0] 	 d2x_fun;
-   wire [4:0] 	 d2x_opcode;
-   wire 	 d2x_shifter_sign;
-   wire [31:0] 	 d2x_imm_i, d2x_imm_s, d2x_imm_u, d2x_imm_b, d2x_imm_j;
-   
    
    rv_predecode decode
      (
       .clk_i(clk_i),
       .rst_i(rst_i),
 
-      .im_data_i(im_data_i),
 
-      .f_stall_i(f_stall),
       .f_ir_i(f2d_ir),
       .f_pc_i(f2d_pc),
 
       .x_pc_o(d2x_pc),
      
-      .rf_rs1_o(rf_rs1),
-      .rf_rs2_o(rf_rs2),
-
       .x_rs1_o(d2x_rs1),
       .x_rs2_o(d2x_rs2),
       
@@ -166,7 +166,7 @@ module rv_cpu
 
       .x_rs1_value_o(x_rs1_value),
       .x_rs2_value_o(x_rs2_value),
-
+      
       .w_rd_i(rf_rd),
       .w_rd_value_i(rf_rd_value),
       .w_rd_store_i(rf_rd_write),
@@ -268,24 +268,23 @@ module rv_cpu
      x2f_bra_d0 <= x2f_bra;
      
 // load to Rd in W stage while Rs1/Rs2==RD in fetch stage: assert interlock
-   reg 		 interlock_load;
-   reg 		 interlock_load_d0 = 0;
 
    
-
+   reg 		 interlock_load, interlock_load_d0 = 0;
+   
    always@*
-     interlock_load <= x_load_comb && ((d2x_rd == rf_rs1) || (d2x_rd == rf_rs2));
+     interlock_load <= f_load_hazard && x_load_comb;
 
    always@(posedge clk_i)
-     interlock_load_d0 <= interlock_load;
-   
-   
+     if(interlock_load_d0)
+       interlock_load_d0 <= 0;
+     else
+       interlock_load_d0 <= interlock_load;   
+
+      
    assign f_stall =  x_stall_req || w_stall_req || (interlock_load && !interlock_load_d0);
-   assign x_stall =  x_stall_req || w_stall_req;
-// || (interlock_load && !interlock_load_d0);
-// || (!f2d_ir_valid);
-   assign w_stall = 0;
- //x_stall_req;
+   assign x_stall =  x_stall_req || w_stall_req || (interlock_load && !interlock_load_d0);
+   assign w_stall =  0;
 
    assign x_kill = x2f_bra || x2f_bra_d0;
    assign f_kill = x2f_bra ;

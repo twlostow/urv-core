@@ -3,6 +3,8 @@ quietly WaveActivateNextPane {} 0
 add wave -noupdate /main/DUT/clk_i
 add wave -noupdate /main/DUT/rst_i
 add wave -noupdate -expand -group cpu /main/DUT/clk_i
+add wave -noupdate -expand -group cpu /main/DUT/rst_i
+add wave -noupdate -expand -group cpu /main/DUT/im_addr_o
 add wave -noupdate -expand -group cpu /main/DUT/im_data_i
 add wave -noupdate -expand -group cpu /main/DUT/im_valid_i
 add wave -noupdate -expand -group cpu /main/DUT/dm_addr_o
@@ -14,16 +16,24 @@ add wave -noupdate -expand -group cpu /main/DUT/dm_store_o
 add wave -noupdate -expand -group cpu /main/DUT/dm_load_o
 add wave -noupdate -expand -group cpu /main/DUT/dm_load_done_i
 add wave -noupdate -expand -group cpu /main/DUT/dm_store_done_i
-add wave -noupdate -expand -group cpu /main/DUT/rst_i
 add wave -noupdate -expand -group cpu /main/DUT/f_stall
+add wave -noupdate -expand -group cpu /main/DUT/w_stall
+add wave -noupdate -expand -group cpu /main/DUT/x_stall
+add wave -noupdate -expand -group cpu /main/DUT/x_kill
+add wave -noupdate -expand -group cpu /main/DUT/f_kill
 add wave -noupdate -expand -group cpu /main/DUT/f2d_pc
+add wave -noupdate -expand -group cpu /main/DUT/f2d_pc_plus_4
 add wave -noupdate -expand -group cpu /main/DUT/f2d_ir
 add wave -noupdate -expand -group cpu /main/DUT/f2d_ir_valid
 add wave -noupdate -expand -group cpu /main/DUT/x2f_pc_bra
 add wave -noupdate -expand -group cpu /main/DUT/x2f_bra
+add wave -noupdate -expand -group cpu /main/DUT/f2d_valid
+add wave -noupdate -expand -group cpu /main/DUT/f_stall_req
 add wave -noupdate -expand -group cpu /main/DUT/d2x_pc
-add wave -noupdate -expand -group cpu /main/DUT/rf_rs2
 add wave -noupdate -expand -group cpu /main/DUT/rf_rs1
+add wave -noupdate -expand -group cpu /main/DUT/d2x_rs1
+add wave -noupdate -expand -group cpu /main/DUT/rf_rs2
+add wave -noupdate -expand -group cpu /main/DUT/d2x_rs2
 add wave -noupdate -expand -group cpu /main/DUT/d2x_rd
 add wave -noupdate -expand -group cpu /main/DUT/d2x_shamt
 add wave -noupdate -expand -group cpu /main/DUT/d2x_fun
@@ -31,26 +41,53 @@ add wave -noupdate -expand -group cpu /main/DUT/d2x_opcode
 add wave -noupdate -expand -group cpu /main/DUT/d2x_shifter_sign
 add wave -noupdate -expand -group cpu /main/DUT/d2x_imm_i
 add wave -noupdate -expand -group cpu /main/DUT/d2x_imm_s
-add wave -noupdate -expand -group cpu /main/DUT/d2x_imm_b
 add wave -noupdate -expand -group cpu /main/DUT/d2x_imm_u
+add wave -noupdate -expand -group cpu /main/DUT/d2x_imm_b
 add wave -noupdate -expand -group cpu /main/DUT/d2x_imm_j
-add wave -noupdate /main/DUT/interlock_load
+add wave -noupdate -expand -group cpu /main/DUT/f_load_hazard
+add wave -noupdate -expand -group cpu /main/DUT/x2w_rd
+add wave -noupdate -expand -group cpu /main/DUT/x2w_rd_value
+add wave -noupdate -expand -group cpu /main/DUT/x2w_dm_addr
+add wave -noupdate -expand -group cpu /main/DUT/x2w_rd_write
+add wave -noupdate -expand -group cpu /main/DUT/x2w_fun
+add wave -noupdate -expand -group cpu /main/DUT/x2w_store
+add wave -noupdate -expand -group cpu /main/DUT/x2w_load
+add wave -noupdate -expand -group cpu /main/DUT/x_rs2_value
+add wave -noupdate -expand -group cpu /main/DUT/x_rs1_value
+add wave -noupdate -expand -group cpu /main/DUT/rf_rd
+add wave -noupdate -expand -group cpu /main/DUT/rf_rd_value
+add wave -noupdate -expand -group cpu /main/DUT/rf_rd_write
+add wave -noupdate -expand -group cpu /main/DUT/rf_bypass_rd_value
+add wave -noupdate -expand -group cpu /main/DUT/rf_bypass_rd_write
+add wave -noupdate -expand -group cpu /main/DUT/x_load_comb
+add wave -noupdate -expand -group cpu /main/DUT/x_stall_req
+add wave -noupdate -expand -group cpu /main/DUT/w_stall_req
+add wave -noupdate -expand -group cpu /main/DUT/x2f_bra_d0
+add wave -noupdate -expand -group cpu /main/DUT/interlock_load
+add wave -noupdate -expand -group cpu /main/DUT/interlock_load_d0
+add wave -noupdate -expand -group cpu /main/DUT/stall_tmp
 add wave -noupdate -expand -group fetch /main/DUT/fetch/clk_i
 add wave -noupdate -expand -group fetch /main/DUT/fetch/rst_i
 add wave -noupdate -expand -group fetch /main/DUT/fetch/im_addr_o
 add wave -noupdate -expand -group fetch /main/DUT/fetch/im_data_i
 add wave -noupdate -expand -group fetch /main/DUT/fetch/im_valid_i
-add wave -noupdate -expand -group fetch /main/DUT/fetch/im_valid_d0
 add wave -noupdate -expand -group fetch /main/DUT/fetch/f_stall_i
 add wave -noupdate -expand -group fetch /main/DUT/fetch/f_kill_i
+add wave -noupdate -expand -group fetch /main/DUT/fetch/rf_rs1_o
+add wave -noupdate -expand -group fetch /main/DUT/fetch/rf_rs2_o
+add wave -noupdate -expand -group fetch /main/DUT/fetch/f_load_hazard_o
 add wave -noupdate -expand -group fetch /main/DUT/fetch/f_ir_o
 add wave -noupdate -expand -group fetch /main/DUT/fetch/f_pc_o
+add wave -noupdate -expand -group fetch /main/DUT/fetch/f_pc_plus_4_o
 add wave -noupdate -expand -group fetch /main/DUT/fetch/f_valid_o
 add wave -noupdate -expand -group fetch /main/DUT/fetch/x_pc_bra_i
 add wave -noupdate -expand -group fetch /main/DUT/fetch/x_bra_i
 add wave -noupdate -expand -group fetch /main/DUT/fetch/pc
 add wave -noupdate -expand -group fetch /main/DUT/fetch/ir
 add wave -noupdate -expand -group fetch /main/DUT/fetch/rst_d
+add wave -noupdate -expand -group fetch /main/DUT/fetch/rs1_mem
+add wave -noupdate -expand -group fetch /main/DUT/fetch/rs2_mem
+add wave -noupdate -expand -group fetch /main/DUT/fetch/rd
 add wave -noupdate -expand -group fetch /main/DUT/fetch/pc_next
 add wave -noupdate -group decode /main/DUT/decode/clk_i
 add wave -noupdate -group decode /main/DUT/decode/rst_i
@@ -185,7 +222,7 @@ add wave -noupdate -expand -group writeback /main/DUT/writeback/rf_rd_o
 add wave -noupdate -expand -group writeback /main/DUT/writeback/rf_rd_write_o
 add wave -noupdate -expand -group writeback /main/DUT/writeback/load_value
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {13948780 ps} 0}
+WaveRestoreCursors {{Cursor 1} {140034 ps} 0}
 configure wave -namecolwidth 250
 configure wave -valuecolwidth 100
 configure wave -justifyvalue left
@@ -200,4 +237,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {13882681 ps} {14027319 ps}
+WaveRestoreZoom {0 ps} {289276 ps}

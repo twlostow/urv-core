@@ -29,8 +29,8 @@ module rv_exec
 
    input 	     x_stall_i,
    input 	     x_kill_i,
-   output 	     x_stall_req_o,
-input		     w_stall_req_i,
+   output reg 	     x_stall_req_o,
+   input 	     w_stall_req_i,
    
    
    input [31:0]      d_pc_i,
@@ -53,9 +53,11 @@ input		     w_stall_req_i,
    input 	     d_is_signed_alu_op_i,
    input 	     d_is_add_i,
    input 	     d_is_shift_i,
-
+   input [1:0] 	     d_rd_source_i,
+   input 	     d_rd_write_i,
+   
    output reg [31:0] f_branch_target_o,
-   output  	     f_branch_take_o,
+   output 	     f_branch_take_o,
 
    output 	     w_load_hazard_o,
    
@@ -94,8 +96,6 @@ input		     w_stall_req_i,
 
    reg [31:0] 	 dm_addr, dm_data_s, dm_select_s;
 
-   reg 	     rd_write;
-   
    wire [32:0] cmp_op1 = { d_is_signed_compare_i ? rs1[31] : 1'b0, rs1 };
    wire [32:0] cmp_op2 = { d_is_signed_compare_i ? rs2[31] : 1'b0, rs2 };
 
@@ -153,8 +153,6 @@ input		     w_stall_req_i,
 
   
    
-   wire[31:0] shifter_result;
-
 
    wire [32:0] alu_addsub_op1 = {d_is_signed_alu_op_i ? alu_op1[31] : 1'b0, alu_op1 };
    wire [32:0] alu_addsub_op2 = {d_is_signed_alu_op_i ? alu_op2[31] : 1'b0, alu_op2 };
@@ -182,61 +180,49 @@ input		     w_stall_req_i,
 	  `FUNC_AND: alu_result <= alu_op1 & alu_op2;
 	  `FUNC_SLT: alu_result <= alu_addsub_result[32]?1:0;
 	  `FUNC_SLTU: alu_result <= alu_addsub_result[32]?1:0;
-	  `FUNC_SL, `FUNC_SR: alu_result <= shifter_result;
-	  
 
 	  default: alu_result <= 32'hx;
 	endcase // case (d_fun_i)
      end // always@ *
 
-   reg 	shifter_req_d0;
-   wire shifter_req = !w_stall_req_i && (d_valid_i) && d_is_shift_i;
+   wire x_stall_req_shifter;
+   wire x_stall_req_multiply = 0;
+   wire x_stall_req_divide   = 0;
+
+   wire [31:0] rd_shifter;
    
-      
+   
    rv_shifter shifter 
      (
       .clk_i(clk_i),
       .rst_i(rst_i),
 
-      .d_i(alu_op1),
-      .q_o(shifter_result),
-      .shift_i(alu_op2[4:0]),
-      .func_i(d_fun_i),
-      .arith_i(d_shifter_sign_i)
+      .x_stall_i(x_stall_i),
+      .w_stall_req_i(w_stall_req_i),
+      .d_valid_i(d_valid_i),
+      .d_rs1_i(rs1),
+      .d_shamt_i(alu_op2[4:0]),
+      .d_fun_i(d_fun_i),
+      .d_shifter_sign_i(d_shifter_sign_i),
+      .d_is_shift_i(d_is_shift_i),
+
+      .x_stall_req_o(x_stall_req_shifter),
+      .x_rd_o(rd_shifter)
       );
 
 
-   always@(posedge clk_i)
-     if(shifter_req_d0 && !x_stall_i)
-       shifter_req_d0 <= 0;
-     else
-       shifter_req_d0 <= shifter_req;
-   
-   wire shifter_stall_req = shifter_req && !shifter_req_d0;
-   
-   // rdest write value
    always@*
-    begin
-       case (d_opcode_i)
-	 `OPC_OP_IMM, `OPC_OP, `OPC_JAL, `OPC_JALR, `OPC_LUI, `OPC_AUIPC:
-	   begin  
-	      rd_value <= alu_result;
-	      rd_write <= 1;
-	   end
-	 
-	 default: 
-	   begin
-	    rd_value <= 32'hx;
-	    rd_write <= 0;
-	   end
-       endcase
-    end
-
+     case (d_rd_source_i)
+       `RD_SOURCE_ALU: rd_value <= alu_result;
+       `RD_SOURCE_SHIFTER : rd_value <= rd_shifter;
+       default: rd_value <= 32'hx;
+     endcase // case (x_rd_source_i)
+   
    // generate load/store address
    always@*
      begin
 	dm_addr <=  rs1 + d_imm_i;
-//[11:0]);
+	//[11:0]);
 
      end
 
@@ -322,7 +308,7 @@ input		     w_stall_req_i,
 	 
 //	 if(!shifter_stall_req)
 	 w_rd_value_o <= rd_value;
-	 w_rd_write_o <= rd_write && !x_kill_i && d_valid_i;
+	 w_rd_write_o <= d_rd_write_i && !x_kill_i && d_valid_i;
 
 	 w_fun_o <= d_fun_i;
    w_load_o <= is_load;
@@ -342,13 +328,17 @@ end // else: !if(rst_i)
    assign f_branch_take_o = f_branch_take;
    
 
-   
-   assign x_stall_req_o = !f_branch_take && (shifter_stall_req || ((is_store || is_load) && !dm_ready_i));
-   assign w_load_hazard_o = d_load_hazard_i;
-   
+   always@*
+     if(f_branch_take)
+       x_stall_req_o <= 0;
+     else if (x_stall_req_shifter || x_stall_req_multiply || x_stall_req_divide)
+       x_stall_req_o <= 1;
+     else if ((is_store || is_load) && !dm_ready_i)
+       x_stall_req_o <= 1;
+     else
+       x_stall_req_o <= 0;
 
-   
-   
+   assign w_load_hazard_o = d_load_hazard_i;
 
 endmodule
 	       

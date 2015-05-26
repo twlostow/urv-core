@@ -64,16 +64,26 @@ add wave -noupdate -expand -group X /main/DUT/execute/rst_i
 add wave -noupdate -expand -group X /main/DUT/execute/x_stall_i
 add wave -noupdate -expand -group X /main/DUT/execute/x_kill_i
 add wave -noupdate -expand -group X /main/DUT/execute/x_stall_req_o
+add wave -noupdate -expand -group X /main/DUT/execute/w_stall_req_i
 add wave -noupdate -expand -group X /main/DUT/execute/d_pc_i
 add wave -noupdate -expand -group X /main/DUT/execute/d_rd_i
 add wave -noupdate -expand -group X /main/DUT/execute/d_fun_i
 add wave -noupdate -expand -group X /main/DUT/execute/rf_rs1_value_i
 add wave -noupdate -expand -group X /main/DUT/execute/rf_rs2_value_i
 add wave -noupdate -expand -group X /main/DUT/execute/d_valid_i
+add wave -noupdate -expand -group X /main/DUT/execute/d_load_hazard_i
 add wave -noupdate -expand -group X /main/DUT/execute/d_opcode_i
 add wave -noupdate -expand -group X /main/DUT/execute/d_shifter_sign_i
+add wave -noupdate -expand -group X /main/DUT/execute/d_imm_i
+add wave -noupdate -expand -group X /main/DUT/execute/d_is_signed_compare_i
+add wave -noupdate -expand -group X /main/DUT/execute/d_is_signed_alu_op_i
+add wave -noupdate -expand -group X /main/DUT/execute/d_is_add_i
+add wave -noupdate -expand -group X /main/DUT/execute/d_is_shift_i
+add wave -noupdate -expand -group X /main/DUT/execute/d_rd_source_i
+add wave -noupdate -expand -group X /main/DUT/execute/d_rd_write_i
 add wave -noupdate -expand -group X /main/DUT/execute/f_branch_target_o
 add wave -noupdate -expand -group X /main/DUT/execute/f_branch_take_o
+add wave -noupdate -expand -group X /main/DUT/execute/w_load_hazard_o
 add wave -noupdate -expand -group X /main/DUT/execute/w_fun_o
 add wave -noupdate -expand -group X /main/DUT/execute/w_load_o
 add wave -noupdate -expand -group X /main/DUT/execute/w_store_o
@@ -99,19 +109,22 @@ add wave -noupdate -expand -group X /main/DUT/execute/branch_target
 add wave -noupdate -expand -group X /main/DUT/execute/dm_addr
 add wave -noupdate -expand -group X /main/DUT/execute/dm_data_s
 add wave -noupdate -expand -group X /main/DUT/execute/dm_select_s
-add wave -noupdate -expand -group X /main/DUT/execute/rd_write
 add wave -noupdate -expand -group X /main/DUT/execute/cmp_op1
 add wave -noupdate -expand -group X /main/DUT/execute/cmp_op2
 add wave -noupdate -expand -group X /main/DUT/execute/cmp_rs
 add wave -noupdate -expand -group X /main/DUT/execute/cmp_equal
 add wave -noupdate -expand -group X /main/DUT/execute/cmp_lt
+add wave -noupdate -expand -group X /main/DUT/execute/f_branch_take
 add wave -noupdate -expand -group X /main/DUT/execute/shifter_result
 add wave -noupdate -expand -group X /main/DUT/execute/alu_addsub_op1
 add wave -noupdate -expand -group X /main/DUT/execute/alu_addsub_op2
 add wave -noupdate -expand -group X /main/DUT/execute/alu_addsub_result
-add wave -noupdate -expand -group X /main/DUT/execute/shifter_req_d0
-add wave -noupdate -expand -group X /main/DUT/execute/shifter_req
-add wave -noupdate -expand -group X /main/DUT/execute/shifter_stall_req
+add wave -noupdate -expand -group X /main/DUT/execute/x_stall_req_shifter
+add wave -noupdate -expand -group X /main/DUT/execute/x_stall_req_multiply
+add wave -noupdate -expand -group X /main/DUT/execute/x_stall_req_divide
+add wave -noupdate -expand -group X /main/DUT/execute/rd_shifter
+add wave -noupdate -expand -group X /main/DUT/execute/d_shamt_i
+add wave -noupdate -expand -group X /main/DUT/execute/d_is_arith_i
 add wave -noupdate -expand -group X /main/DUT/execute/is_load
 add wave -noupdate -expand -group X /main/DUT/execute/is_store
 add wave -noupdate -group W /main/DUT/writeback/clk_i
@@ -195,7 +208,7 @@ add wave -noupdate -group Top /main/DUT/w_stall_req
 add wave -noupdate -group Top /main/DUT/x2f_bra_d0
 add wave -noupdate -group Top /main/DUT/x2f_bra_d1
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {31985000 ps} 0}
+WaveRestoreCursors {{Cursor 1} {32345000 ps} 0}
 configure wave -namecolwidth 250
 configure wave -valuecolwidth 100
 configure wave -justifyvalue left
@@ -210,4 +223,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {13501336 ps} {50528664 ps}
+WaveRestoreZoom {31531345 ps} {33845553 ps}

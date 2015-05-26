@@ -77,6 +77,9 @@ module rv_cpu
    wire d2x_is_signed_alu_op;
    wire d2x_is_add_o;
    wire d2x_is_shift_o;
+   wire [1:0] d2x_rd_source;
+   wire       d2x_rd_write;
+   
    
    wire 	 d2x_load_hazard;
    wire 	 d_stall, d_kill;
@@ -137,7 +140,9 @@ module rv_cpu
       .x_is_signed_compare_o(d2x_is_signed_compare),
       .x_is_signed_alu_op_o(d2x_is_signed_alu_op),
       .x_is_add_o(d2x_is_add),
-      .x_is_shift_o(d2x_is_shift)
+      .x_is_shift_o(d2x_is_shift),
+      .x_rd_source_o(d2x_rd_source),
+      .x_rd_write_o(d2x_rd_write)
       );
 
       wire [4:0] 	 x2w_rd;
@@ -213,6 +218,8 @@ module rv_cpu
       .d_is_signed_alu_op_i(d2x_is_signed_alu_op),
       .d_is_add_i(d2x_is_add),
       .d_is_shift_i(d2x_is_shift),
+      .d_rd_source_i(d2x_rd_source),
+      .d_rd_write_i(d2x_rd_write),
 
       .rf_rs1_value_i(x_rs1_value),
       .rf_rs2_value_i(x_rs2_value),

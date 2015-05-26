@@ -52,14 +52,17 @@ module rv_decode
  output reg [4:0]  x_shamt_o,
  output reg [2:0]  x_fun_o,
 
- output [4:0]  x_opcode_o,
+ output [4:0] 	   x_opcode_o,
  output reg 	   x_shifter_sign_o,
  
  output reg [31:0] x_imm_o,
  output reg 	   x_is_signed_compare_o,
  output reg 	   x_is_signed_alu_op_o,
  output reg 	   x_is_add_o,
- output reg 	   x_is_shift_o
+ output reg 	   x_is_shift_o,
+ output reg [1:0]  x_rd_source_o,
+ output reg x_rd_write_o
+ 
  );
 
 
@@ -158,21 +161,38 @@ module rv_decode
 	    default: x_imm_o <= 32'hx;
 	  endcase // case (opcode)
      end // always@ (posedge clk_i)
-   
+
+   wire d_is_shift = (d_fun == `FUNC_SL || d_fun == `FUNC_SR) &&
+			    (d_opcode == `OPC_OP || d_opcode == `OPC_OP_IMM );
 
    // misc decoding
    always@(posedge clk_i)
-	if(!d_stall_i)
-	  begin
-	     x_is_shift_o <=	(d_fun == `FUNC_SL || d_fun == `FUNC_SR) &&
-			    (d_opcode == `OPC_OP || d_opcode == `OPC_OP_IMM );
-	     x_is_signed_compare_o <= ( ( d_opcode == `OPC_BRANCH) && ( ( d_fun == `BRA_GE )|| (d_fun == `BRA_LT ) ) )
-	       || ( ( (d_opcode == `OPC_OP) || (d_opcode == `OPC_OP_IMM) ) && (d_fun == `FUNC_SLT ) );
+     if(!d_stall_i)
+       begin
+	  x_is_shift_o <= d_is_shift;
+	  
+	  x_is_signed_compare_o <= ( ( d_opcode == `OPC_BRANCH) && ( ( d_fun == `BRA_GE )|| (d_fun == `BRA_LT ) ) )
+	    || ( ( (d_opcode == `OPC_OP) || (d_opcode == `OPC_OP_IMM) ) && (d_fun == `FUNC_SLT ) );
 
-	     x_is_add_o <= !((d_opcode == `OPC_OP && d_fun == `FUNC_ADD && f_ir_i[30]) || (d_fun == `FUNC_SLT) || (d_fun == `FUNC_SLTU));
-	     x_is_signed_alu_op_o <= (d_fun == `FUNC_SLT);
-	     
-	  end
+	  x_is_add_o <= !((d_opcode == `OPC_OP && d_fun == `FUNC_ADD && f_ir_i[30]) || (d_fun == `FUNC_SLT) || (d_fun == `FUNC_SLTU));
+
+	  x_is_signed_alu_op_o <= (d_fun == `FUNC_SLT);
+
+	  
+	  if(d_is_shift)
+	    x_rd_source_o <= `RD_SOURCE_SHIFTER;
+	  else
+	    x_rd_source_o <= `RD_SOURCE_ALU;
+
+	  // rdest write value
+	  case (d_opcode)
+	    `OPC_OP_IMM, `OPC_OP, `OPC_JAL, `OPC_JALR, `OPC_LUI, `OPC_AUIPC:
+	      x_rd_write_o <= 1;
+	    default:
+	      x_rd_write_o <= 0;
+	  endcase // case (d_opcode)
+       end // if (!d_stall_i)
+   
 	
    
    

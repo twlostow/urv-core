@@ -50,3 +50,12 @@
 `define FUNC_SL 3'b001
 `define FUNC_SR 3'b101
 
+`define FUNC_MUL 3'b000
+`define FUNC_MULH 3'b001
+`define FUNC_MULHSU 3'b010
+`define FUNC_MULHU 3'b011
+
+`define RD_SOURCE_ALU 2'b00 
+`define RD_SOURCE_SHIFTER 2'b10
+`define RD_SOURCE_MULTIPLY 2'b01
+`define RD_SOURCE_DIVIDE 2'b11

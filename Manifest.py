@@ -13,4 +13,5 @@ files = [ "main.sv",
           "rv_predecode.v",
           "rv_regfile.v",
           "rv_writeback.v",
-          "rv_shifter.v"];
+          "rv_shifter.v",
+          "rv_multiply.v"];

@@ -30,7 +30,7 @@ module rv_exec
    input 	     x_stall_i,
    input 	     x_kill_i,
    output 	     x_stall_req_o,
-   wire 	     w_stall_req_i,
+   input 	     w_stall_req_i,
    
    
    input [31:0]      d_pc_i,

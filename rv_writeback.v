@@ -96,10 +96,27 @@ module rv_writeback
 	endcase // case (d_fun_i)
      end // always@ *
 
+   
+   
+
+   reg interlock_d = 0;
+   wire interlock = (x_load_i && dm_load_done_i && x_load_hazard_i);
+
+   always@(posedge clk_i)
+     begin
+	if(interlock_d)
+	  interlock_d <= 0;
+	else
+	  interlock_d <= interlock;
+     end
+   
+
    assign rf_rd_value_o = (x_load_i ? load_value : x_rd_value_i );
    assign rf_rd_o = (x_rd_i);
-   assign rf_rd_write_o = (w_stall_i ? 1'b0 : (x_load_i && dm_load_done_i ? 1'b1 : x_rd_write_i ));
+   assign rf_rd_write_o = !interlock_d && (w_stall_i ? 1'b0 : (x_load_i && dm_load_done_i ? 1'b1 : x_rd_write_i ));
+      
+   assign w_stall_req_o = (x_load_i && !dm_load_done_i) || (x_store_i && !dm_store_done_i) || (interlock && !interlock_d);
 
-   assign w_stall_req_o = (x_load_i && !dm_load_done_i) || (x_store_i && !dm_store_done_i);
 
+   
 endmodule // rv_writeback

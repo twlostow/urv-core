@@ -60,6 +60,8 @@ module rv_cpu
 
    wire 	 f_stall_req;
    
+
+   wire 	 d2x_valid;
    
    wire [31:0] 	 d2x_pc;
    wire [4:0] 	 rf_rs1, d2x_rs1;
@@ -71,7 +73,9 @@ module rv_cpu
    wire 	 d2x_shifter_sign;
    wire [31:0] 	 d2x_imm_i, d2x_imm_s, d2x_imm_u, d2x_imm_b, d2x_imm_j;
    
-   wire 	 f_load_hazard;
+   wire 	 d_load_hazard;
+   wire 	 d_stall, d_kill;
+
    
    rv_fetch fetch
      (
@@ -81,10 +85,6 @@ module rv_cpu
       .im_data_i(im_data_i),
       .im_valid_i(im_valid_i),
 
-      .rf_rs1_o(rf_rs1),
-      .rf_rs2_o(rf_rs2),
-      .f_load_hazard_o(f_load_hazard),
-      
       .f_stall_i(f_stall),
       .f_kill_i(f_kill),
       .f_valid_o(f2d_valid),
@@ -92,23 +92,30 @@ module rv_cpu
       .f_ir_o(f2d_ir),
       .f_pc_o(f2d_pc),
 
-    //  .f_ir_valid_o(f2d_ir_valid),
       .x_pc_bra_i(x2f_pc_bra),
       .x_bra_i(x2f_bra)
       );
 
    
-   rv_predecode decode
+   rv_decode decode
      (
       .clk_i(clk_i),
       .rst_i(rst_i),
 
+      .d_stall_i(d_stall),
+      .d_kill_i(d_kill),
 
       .f_ir_i(f2d_ir),
       .f_pc_i(f2d_pc),
+      .f_valid_i(f2d_valid),
 
+      .x_load_hazard_o(d_load_hazard),
+
+      .rf_rs1_o(rf_rs1),
+      .rf_rs2_o(rf_rs2),
+      
+      .x_valid_o(d2x_valid),
       .x_pc_o(d2x_pc),
-     
       .x_rs1_o(d2x_rs1),
       .x_rs2_o(d2x_rs2),
       
@@ -177,8 +184,10 @@ module rv_cpu
 
    
    wire 	 x_load_comb;
+   wire 	 x2w_load_hazard;
    
 
+   wire 	 w_stall_req;
    
    rv_exec execute
      (
@@ -188,8 +197,11 @@ module rv_cpu
       .x_stall_i(x_stall),
       .x_kill_i(x_kill),
       .x_stall_req_o(x_stall_req),
-      .d_valid_i(f2d_valid),
-   
+      .w_stall_req_i(w_stall_req),
+
+      .d_valid_i(d2x_valid),
+
+      .d_load_hazard_i(d_load_hazard),
       .d_pc_i(d2x_pc),
       .d_rd_i(d2x_rd),
       .d_fun_i(d2x_fun),
@@ -210,7 +222,7 @@ module rv_cpu
       .f_branch_take_o (x2f_bra),
 
 
-      .x_load_o(x_load_comb),
+      .w_load_hazard_o(x2w_load_hazard),
    // Writeback stage I/F
       .w_fun_o(x2w_fun),
       .w_load_o(x2w_load),
@@ -229,7 +241,6 @@ module rv_cpu
       .dm_ready_i(dm_ready_i)
    );
 
-   wire 	 w_stall_req;
    
 
    rv_writeback writeback
@@ -242,6 +253,7 @@ module rv_cpu
       
       .x_fun_i(x2w_fun),
       .x_load_i(x2w_load),
+      .x_load_hazard_i(x2w_load_hazard),
       .x_store_i(x2w_store),
       
       .x_rd_i(x2w_rd),
@@ -259,34 +271,45 @@ module rv_cpu
       .rf_rd_write_o(rf_rd_write)
    );
 
-   reg 		 x2f_bra_d0;
+   reg 		 x2f_bra_d0, x2f_bra_d1;
 
    always@(posedge clk_i)
-     if(rst_i)
-       x2f_bra_d0 <= 0;
-   else if (!x_stall)
-     x2f_bra_d0 <= x2f_bra;
+     if(rst_i) begin
+	x2f_bra_d0 <= 0;
+	x2f_bra_d1 <= 0;
+     end else if (!x_stall) begin
+	x2f_bra_d0 <= x2f_bra;
+	x2f_bra_d1 <= x2f_bra_d0;
+     end
+   
      
 // load to Rd in W stage while Rs1/Rs2==RD in fetch stage: assert interlock
 
    
+/* -----\/----- EXCLUDED -----\/-----
    reg 		 interlock_load, interlock_load_d0 = 0;
    
    always@*
-     interlock_load <= f_load_hazard && x_load_comb;
+     interlock_load <= d_load_hazard && x_load_comb;
 
    always@(posedge clk_i)
      if(interlock_load_d0)
        interlock_load_d0 <= 0;
      else
        interlock_load_d0 <= interlock_load;   
+ -----/\----- EXCLUDED -----/\----- */
 
       
-   assign f_stall =  x_stall_req || w_stall_req || (interlock_load && !interlock_load_d0);
-   assign x_stall =  x_stall_req || w_stall_req || (interlock_load && !interlock_load_d0);
+   assign f_stall =  x_stall_req || w_stall_req;
+// || (interlock_load && !interlock_load_d0);
+   assign x_stall =  x_stall_req || w_stall_req;
+// || (interlock_load && !interlock_load_d0);
+   assign d_stall =  x_stall_req || w_stall_req;
+// || (interlock_load && !interlock_load_d0);
    assign w_stall =  0;
 
-   assign x_kill = x2f_bra || x2f_bra_d0;
+   assign x_kill = x2f_bra || x2f_bra_d0 || x2f_bra_d1;
+   assign d_kill = x2f_bra || x2f_bra_d0;
    assign f_kill = x2f_bra ;
 
    

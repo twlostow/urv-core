@@ -30,6 +30,7 @@ module rv_exec
    input 	     x_stall_i,
    input 	     x_kill_i,
    output 	     x_stall_req_o,
+   wire 	     w_stall_req_i,
    
    
    input [31:0]      d_pc_i,
@@ -41,6 +42,8 @@ module rv_exec
    input [31:0]      rf_rs2_value_i,
 
    input 	     d_valid_i,
+
+   input 	     d_load_hazard_i,
    
    input [4:0] 	     d_opcode_i,
    input 	     d_shifter_sign_i,
@@ -54,7 +57,7 @@ module rv_exec
    output reg [31:0] f_branch_target_o,
    output reg 	     f_branch_take_o,
 
-   output 	     x_load_o,
+   output 	     w_load_hazard_o,
    
    // Writeback stage I/F
    output reg [2:0 ] w_fun_o,
@@ -188,7 +191,7 @@ module rv_exec
      end // always@ *
 
    reg 	shifter_req_d0;
-   wire shifter_req = (d_valid_i) && (d_fun_i == `FUNC_SL || d_fun_i == `FUNC_SR) &&
+   wire shifter_req = !w_stall_req_i && (d_valid_i) && (d_fun_i == `FUNC_SL || d_fun_i == `FUNC_SR) &&
 	(d_opcode_i == `OPC_OP || d_opcode_i == `OPC_OP_IMM );
       
    rv_shifter shifter 
@@ -298,8 +301,8 @@ module rv_exec
    wire is_load = (d_opcode_i == `OPC_LOAD ? 1: 0) && d_valid_i && !x_kill_i;
    wire is_store = (d_opcode_i == `OPC_STORE ? 1: 0) && d_valid_i && !x_kill_i;
 
-   assign dm_load_o = is_load;
-   assign dm_store_o = is_store;
+   assign dm_load_o = is_load && !x_stall_i;
+   assign dm_store_o = is_store && !x_stall_i;
    
    always@(posedge clk_i) 
       if (rst_i) begin
@@ -313,8 +316,7 @@ module rv_exec
 	 w_dm_addr_o <= 0;
 	 
 	 
-      end 
-else begin //if (!x_stall_i) begin
+      end else if (!x_stall_i) begin
 	 f_branch_target_o <= branch_target;
 	 f_branch_take_o <= branch_take && !x_kill_i && d_valid_i;
 
@@ -331,19 +333,19 @@ else begin //if (!x_stall_i) begin
 	 
 	 w_dm_addr_o <= dm_addr;
 	 
-//      end else begin // if (!x_stall_i)
-//	 f_branch_take_o <= 0;
-//	 w_rd_write_o <= 0;
-//	 w_load_o <= 0;
-//	 w_store_o <= 0;
-  //    end
+      end else begin // if (!x_stall_i)
+	 f_branch_take_o <= 0;
+	 w_rd_write_o <= 0;
+	 w_load_o <= 0;
+	 w_store_o <= 0;
+  
 end // else: !if(rst_i)
    
 
    
    assign x_stall_req_o = shifter_stall_req || ((is_store || is_load) && !dm_ready_i);
-   assign x_load_o =  is_load;
-
+   assign w_load_hazard_o = d_load_hazard_i;
+   
 
    
    

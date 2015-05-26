@@ -32,11 +32,6 @@ module rv_fetch
  input 		   f_stall_i,
  input 		   f_kill_i,
 
- output reg [4:0]  rf_rs1_o,
- output reg [4:0]  rf_rs2_o,
-
- output reg 	   f_load_hazard_o,
- 
  output [31:0] 	   f_ir_o,
  output reg [31:0] f_pc_o,
  output reg [31:0] f_pc_plus_4_o,
@@ -48,30 +43,8 @@ module rv_fetch
 );
 
    reg [31:0] pc;
-   reg [31:0] ir;
+   reg [31:0] ir ,ir_prev;
    reg 	      rst_d;
-
-   wire [4:0] rs1_mem = im_data_i[19:15];
-   wire [4:0] rs2_mem = im_data_i[24:20];
-
-   wire [4:0] rd = ir [11:7];
-   
-   always@*
-     if(!f_stall_i)
-       begin
-	  rf_rs1_o <= im_data_i [19:15];
-	  rf_rs2_o <= im_data_i [24:20];
-       end else begin
-	  rf_rs1_o <= ir[19:15];
-	  rf_rs2_o <= ir[24:20];
-       end
-
-   always@*
-     f_load_hazard_o <= ( (rs1_mem == rd)  || (rs2_mem == rd) ) && !f_kill_i;
-   
- 
-
-  
 
    reg [31:0]  pc_next;
 

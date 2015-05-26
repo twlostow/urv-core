@@ -130,6 +130,7 @@ module main;
       .dm_load_done_i(1'b1),
       .dm_ready_i(dm_ready)
       );
+   
 
    always #5ns clk <= ~clk;
 
@@ -231,16 +232,18 @@ module main;
 	
 	if(dm_write)
 	  $display("DM Write addr %x data %x", dm_addr, dm_data_s);
-	if (DUT.writeback.x_load_i && !DUT.writeback.w_stall_i)
+	if (DUT.writeback.x_load_i && DUT.writeback.rf_rd_write_o)
 	  begin
-	     if ($isunkown(dm_data_l))
+/* -----\/----- EXCLUDED -----\/-----
+	     if ($isunknown(dm_data_l))
 	       begin
 		  $error("Attempt to load uninitialized entry from memory");
 		  $stop;
 	       end
+ -----/\----- EXCLUDED -----/\----- */
 	     
 
-     $display("DM Load addr %x data %x -> %s", dm_addr_d0, dm_data_l, decode_regname(DUT.writeback.x_rd_i));
+     $display("DM Load addr %x data %x -> %s", dm_addr_d0, DUT.writeback.rf_rd_value_o, decode_regname(DUT.writeback.x_rd_i));
 	  end
 	end
      end

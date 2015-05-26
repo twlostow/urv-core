@@ -71,9 +71,14 @@ module rv_cpu
    wire [2:0] 	 d2x_fun;
    wire [4:0] 	 d2x_opcode;
    wire 	 d2x_shifter_sign;
-   wire [31:0] 	 d2x_imm_i, d2x_imm_s, d2x_imm_u, d2x_imm_b, d2x_imm_j;
+
+   wire [31:0] 	 d2x_imm;
+   wire d2x_is_signed_compare;
+   wire d2x_is_signed_alu_op;
+   wire d2x_is_add_o;
+   wire d2x_is_shift_o;
    
-   wire 	 d_load_hazard;
+   wire 	 d2x_load_hazard;
    wire 	 d_stall, d_kill;
 
    
@@ -109,10 +114,11 @@ module rv_cpu
       .f_pc_i(f2d_pc),
       .f_valid_i(f2d_valid),
 
-      .x_load_hazard_o(d_load_hazard),
 
       .rf_rs1_o(rf_rs1),
       .rf_rs2_o(rf_rs2),
+
+      .x_load_hazard_o(d2x_load_hazard),
       
       .x_valid_o(d2x_valid),
       .x_pc_o(d2x_pc),
@@ -126,12 +132,12 @@ module rv_cpu
 
       .x_opcode_o(d2x_opcode),
       .x_shifter_sign_o(d2x_shifter_sign),
-     
-      .x_imm_i_o(d2x_imm_i),
-      .x_imm_s_o(d2x_imm_s),
-      .x_imm_b_o(d2x_imm_b),
-      .x_imm_u_o(d2x_imm_u),
-      .x_imm_j_o(d2x_imm_j)
+
+      .x_imm_o(d2x_imm),
+      .x_is_signed_compare_o(d2x_is_signed_compare),
+      .x_is_signed_alu_op_o(d2x_is_signed_alu_op),
+      .x_is_add_o(d2x_is_add),
+      .x_is_shift_o(d2x_is_shift)
       );
 
       wire [4:0] 	 x2w_rd;
@@ -201,22 +207,22 @@ module rv_cpu
 
       .d_valid_i(d2x_valid),
 
-      .d_load_hazard_i(d_load_hazard),
+      .d_load_hazard_i(d2x_load_hazard),
       .d_pc_i(d2x_pc),
       .d_rd_i(d2x_rd),
       .d_fun_i(d2x_fun),
+      .d_imm_i(d2x_imm),
+      .d_is_signed_compare_i(d2x_is_signed_compare),
+      .d_is_signed_alu_op_i(d2x_is_signed_alu_op),
+      .d_is_add_i(d2x_is_add),
+      .d_is_shift_i(d2x_is_shift),
 
       .rf_rs1_value_i(x_rs1_value),
       .rf_rs2_value_i(x_rs2_value),
    
       .d_opcode_i(d2x_opcode),
       .d_shifter_sign_i(d2x_shifter_sign),
- 
-      .d_imm_i_i(d2x_imm_i),
-      .d_imm_s_i(d2x_imm_s),
-      .d_imm_b_i(d2x_imm_b),
-      .d_imm_u_i(d2x_imm_u),
-      .d_imm_j_i(d2x_imm_j),
+  
 
       .f_branch_target_o (x2f_pc_bra), // fixme: consistent naming
       .f_branch_take_o (x2f_bra),

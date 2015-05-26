@@ -30,7 +30,7 @@ module rv_exec
    input 	     x_stall_i,
    input 	     x_kill_i,
    output 	     x_stall_req_o,
-   input 	     w_stall_req_i,
+		     w_stall_req_i,
    
    
    input [31:0]      d_pc_i,
@@ -47,12 +47,12 @@ module rv_exec
    
    input [4:0] 	     d_opcode_i,
    input 	     d_shifter_sign_i,
- 
-   input [31:0]      d_imm_i_i,
-   input [31:0]      d_imm_s_i,
-   input [31:0]      d_imm_b_i,
-   input [31:0]      d_imm_u_i,
-   input [31:0]      d_imm_j_i,
+
+   input [31:0]      d_imm_i,
+   input 	     d_is_signed_compare_i,
+   input 	     d_is_signed_alu_op_i,
+   input 	     d_is_add_i,
+   input 	     d_is_shift_i,
 
    output reg [31:0] f_branch_target_o,
    output reg 	     f_branch_take_o,
@@ -96,11 +96,8 @@ module rv_exec
 
    reg 	     rd_write;
    
-   wire cmp_sign_ext = ( ( d_opcode_i == `OPC_BRANCH) && ( ( d_fun_i == `BRA_GE )|| (d_fun_i == `BRA_LT ) ) )
-	|| ( ( (d_opcode_i == `OPC_OP) || (d_opcode_i == `OPC_OP_IMM) ) && (d_fun_i == `FUNC_SLT ) );
-   
-   wire [32:0] cmp_op1 = { cmp_sign_ext ? rs1[31] : 1'b0, rs1 };
-   wire [32:0] cmp_op2 = { cmp_sign_ext ? rs2[31] : 1'b0, rs2 };
+   wire [32:0] cmp_op1 = { d_is_signed_compare_i ? rs1[31] : 1'b0, rs1 };
+   wire [32:0] cmp_op2 = { d_is_signed_compare_i ? rs2[31] : 1'b0, rs2 };
 
    wire [32:0] cmp_rs = cmp_op1 - cmp_op2;
    
@@ -121,9 +118,9 @@ module rv_exec
    
    always@*
      case (d_opcode_i)
-       `OPC_JAL: branch_target <= d_pc_i + d_imm_j_i;
-       `OPC_JALR: branch_target <= rs1 + d_imm_i_i;
-       `OPC_BRANCH: branch_target <= d_pc_i + d_imm_b_i;
+       `OPC_JAL: branch_target <= d_pc_i + d_imm_i;
+       `OPC_JALR: branch_target <= rs1 + d_imm_i;
+       `OPC_BRANCH: branch_target <= d_pc_i + d_imm_i;
        
        default: branch_target<= 32'hx;
      endcase // case (d_opcode_i)
@@ -132,8 +129,8 @@ module rv_exec
    always@*
      begin
 	case (d_opcode_i)
-	  `OPC_LUI: alu_op1 <= { d_imm_u_i[31:12] , 12'h0 };
-	  `OPC_AUIPC: alu_op1 <= { d_imm_u_i[31:12] , 12'h0 };
+	  `OPC_LUI: alu_op1 <= d_imm_i;
+	  `OPC_AUIPC: alu_op1 <= d_imm_i;
 	  `OPC_JAL: alu_op1 <= 4;
 	  `OPC_JALR: alu_op1 <= 4;
 	  default: alu_op1 <= rs1;
@@ -145,27 +142,26 @@ module rv_exec
 	  `OPC_AUIPC: alu_op2 <= d_pc_i;
 	  `OPC_JAL: alu_op2 <= d_pc_i;
 	  `OPC_JALR: alu_op2 <= d_pc_i;
-	  `OPC_OP_IMM: alu_op2 <= d_imm_i_i;
+	  `OPC_OP_IMM: alu_op2 <= d_imm_i;
 	  default: alu_op2 <= rs2;
 	endcase // case (d_opcode_i)
 	
      end
 
-   wire is_add = !((d_opcode_i == `OPC_OP && d_fun_i == `FUNC_ADD && d_shifter_sign_i) || (d_fun_i == `FUNC_SLT) || (d_fun_i == `FUNC_SLTU));
+  
    
    wire[31:0] shifter_result;
 
-   wire alu_op_signext = (d_fun_i == `FUNC_SLT);
 
-   wire [32:0] alu_addsub_op1 = {alu_op_signext ? alu_op1[31] : 1'b0, alu_op1 };
-   wire [32:0] alu_addsub_op2 = {alu_op_signext ? alu_op2[31] : 1'b0, alu_op2 };
+   wire [32:0] alu_addsub_op1 = {d_is_signed_alu_op_i ? alu_op1[31] : 1'b0, alu_op1 };
+   wire [32:0] alu_addsub_op2 = {d_is_signed_alu_op_i ? alu_op2[31] : 1'b0, alu_op2 };
 
 
    
    reg [32:0]  alu_addsub_result;
 
    always@*
-     if(is_add)
+     if(d_is_add_i)
        alu_addsub_result <= alu_addsub_op1 + alu_addsub_op2;
      else
        alu_addsub_result <= alu_addsub_op1 - alu_addsub_op2;
@@ -191,8 +187,8 @@ module rv_exec
      end // always@ *
 
    reg 	shifter_req_d0;
-   wire shifter_req = !w_stall_req_i && (d_valid_i) && (d_fun_i == `FUNC_SL || d_fun_i == `FUNC_SR) &&
-	(d_opcode_i == `OPC_OP || d_opcode_i == `OPC_OP_IMM );
+   wire shifter_req = !w_stall_req_i && (d_valid_i) && d_is_shift_i;
+   
       
    rv_shifter shifter 
      (
@@ -235,8 +231,8 @@ module rv_exec
    always@*
      begin
 	case (d_opcode_i) 
-	  `OPC_LOAD: dm_addr <= rs1 + d_imm_i_i;
-	  `OPC_STORE: dm_addr <= rs1 + d_imm_s_i;
+	  `OPC_LOAD: dm_addr <= rs1 + d_imm_i;
+	  `OPC_STORE: dm_addr <= rs1 + d_imm_i;
 	  default: dm_addr <= 32'hx;
 	  
 	endcase // case (d_opcode_i)

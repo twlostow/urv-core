@@ -31,7 +31,7 @@ module rv_decode
  input 		   d_stall_i,
  input 		   d_kill_i,
  
- output reg	   x_load_hazard_o,
+ output reg 	   x_load_hazard_o,
  
  input [31:0] 	   f_ir_i,
  input [31:0] 	   f_pc_i,
@@ -41,45 +41,45 @@ module rv_decode
 
  output reg [31:0] x_pc_o,
   
- output reg [4:0] 	   rf_rs1_o,
- output reg [4:0] 	   rf_rs2_o,
+ output reg [4:0]  rf_rs1_o,
+ output reg [4:0]  rf_rs2_o,
 
  output [4:0] 	   x_rs1_o,
  output [4:0] 	   x_rs2_o,
  
  output [4:0] 	   x_rd_o,
 
- output [4:0] 	   x_shamt_o,
+ output reg [4:0]  x_shamt_o,
  output reg [2:0]  x_fun_o,
 
- output [4:0] 	   x_opcode_o,
- output 	   x_shifter_sign_o,
+ output reg [4:0]  x_opcode_o,
+ output reg 	   x_shifter_sign_o,
  
- output [31:0] 	   x_imm_i_o,
- output [31:0] 	   x_imm_s_o,
- output [31:0] 	   x_imm_b_o,
- output [31:0] 	   x_imm_u_o,
- output [31:0] 	   x_imm_j_o
+ output reg [31:0] x_imm_o,
+ output reg 	   x_is_signed_compare_o,
+ output reg 	   x_is_signed_alu_op_o,
+ output reg 	   x_is_add_o,
+ output reg 	   x_is_shift_o
  );
 
-   reg [31:0] 	  d_ir = 0;
 
    wire [4:0] f_rs1 = f_ir_i[19:15];
    wire [4:0] f_rs2 = f_ir_i[24:20];
 
-   wire [4:0] d_rs1 = d_ir[19:15];
-   wire [4:0] d_rs2 = d_ir[24:20];
+   reg [4:0] x_rs1;
+   reg [4:0] x_rs2;
+   reg [4:0] x_rd;
 
-   wire [4:0] rd = d_ir [11:7];
-
-   reg [31:0] f_ir_d;
    
+   assign x_rs1_o = x_rs1;
+   assign x_rs2_o = x_rs2;
+   assign x_rd_o = x_rd;
    
    always@*
      if(d_stall_i)
        begin
-	  rf_rs1_o <= d_rs1;
-	  rf_rs2_o <= d_rs2;
+	  rf_rs1_o <= x_rs1;
+	  rf_rs2_o <= x_rs2;
        end else begin
 	  rf_rs1_o <= f_rs1;
 	  rf_rs2_o <= f_rs2;
@@ -90,57 +90,85 @@ module rv_decode
        begin
 	  x_pc_o <= 0;
 	  x_valid_o <= 0;
-	  
-     end else if(!d_stall_i)
-       begin
-	  d_ir <= f_ir_i;
+       end else if(!d_stall_i) begin
 	  x_valid_o <= f_valid_i && !d_kill_i;
 	  x_pc_o <= f_pc_i;
        end
 
-   wire [4:0]       opcode = d_ir[6:2];
+   wire [4:0] d_opcode = f_ir_i[6:2];
    
    always@(posedge clk_i)
      if(!d_stall_i)
-       x_load_hazard_o <= ( (f_rs1 == rd)  || (f_rs2 == rd) ) && (!d_kill_i) && (opcode == `OPC_LOAD);
+       x_load_hazard_o <= ( (f_rs1 == x_rd)  || (f_rs2 == x_rd) ) && (!d_kill_i) && (d_opcode == `OPC_LOAD);
    
-   
-   assign x_rs1_o = d_ir [19:15];
-   assign x_rs2_o = d_ir [24:20];
 
-   assign x_rd_o = d_ir [11:7];
-   assign x_opcode_o = d_ir[6:2];
-   assign x_shamt_o = d_ir[24:20];
-
+   always@(posedge clk_i)
+     if(!d_stall_i)
+       begin
+	  x_rs1 <= f_rs1;
+	  x_rs2 <= f_rs2;
+	  x_rd <= f_ir_i [11:7];
+	  x_opcode_o <= d_opcode;
+	  x_shamt_o <= f_ir_i[24:20];
+       end
    
    // attempt to reuse ALU for jump address generation
+   wire [2:0] d_fun = f_ir_i[14:12];
 
-   always@*
-     case (opcode)
+   always@(posedge clk_i)
+	if(!d_stall_i)
+     case (d_opcode)
        `OPC_JAL, `OPC_JALR, `OPC_LUI, `OPC_AUIPC:
 	 x_fun_o <= `FUNC_ADD;
        default:
-	 x_fun_o <= d_ir[14:12];
+	 x_fun_o <= d_fun;
      endcase // case (f_opcode)
    
-   
-   //assign x_fun_o = f_ir_i[14:12];
-   
-   assign x_shifter_sign_o = d_ir[30];
+   always@(posedge clk_i)
+     if(!d_stall_i)
+       x_shifter_sign_o <= f_ir_i[30];
+
+   wire[31:0] d_imm_i = { {21{ f_ir_i[31] }}, f_ir_i[30:25], f_ir_i[24:21], f_ir_i[20] };
+   wire[31:0] d_imm_s = { {21{ f_ir_i[31] }}, f_ir_i[30:25], f_ir_i[11:8], f_ir_i[7] };
+   wire[31:0] d_imm_b = { {20{ f_ir_i[31] }}, f_ir_i[7], f_ir_i[30:25], f_ir_i[11:8], 1'b0 };
+   wire[31:0] d_imm_u = { f_ir_i[31], f_ir_i[30:20], f_ir_i[19:12], 12'h000 };
+   wire[31:0] d_imm_j = { {12{f_ir_i[31]}}, 
+			      f_ir_i[19:12], 
+			      f_ir_i[20], f_ir_i[30:25], f_ir_i[24:21], 1'b0};
 
    
-   // decoded imm values
-   assign  x_imm_i_o = { {21{ d_ir[31] }}, d_ir[30:25], d_ir[24:21], d_ir[20] };
-   assign	x_imm_s_o = { {21{ d_ir[31] }}, d_ir[30:25], d_ir[11:8], d_ir[7] };
-   assign 	x_imm_b_o = { {20{ d_ir[31] }}, d_ir[7], d_ir[30:25], d_ir[11:8], 1'b0 };
-   assign 	x_imm_u_o = { d_ir[31], d_ir[30:20], d_ir[19:12], 12'h000 };
-   assign  	x_imm_j_o = { {12{d_ir[31]}}, 
-			      d_ir[19:12], 
-			      d_ir[20], d_ir[30:25], d_ir[24:21], 1'b0};
 
+   
+   
+   always@(posedge clk_i)
+     begin
+	if(!d_stall_i)
+	  case(d_opcode)
+	    `OPC_LUI, `OPC_AUIPC: x_imm_o <= d_imm_u;
+	    `OPC_OP_IMM, `OPC_LOAD: x_imm_o <= d_imm_i;
+	    `OPC_STORE: x_imm_o <= d_imm_s;
+	    `OPC_JAL: x_imm_o <= d_imm_j;
+	    `OPC_JALR: x_imm_o <= d_imm_i;
+	    `OPC_BRANCH: x_imm_o <= d_imm_b;
+	    default: x_imm_o <= 32'hx;
+	  endcase // case (opcode)
+     end // always@ (posedge clk_i)
+   
 
+   // misc decoding
+   always@(posedge clk_i)
+	if(!d_stall_i)
+	  begin
+	     x_is_shift_o <=	(d_fun == `FUNC_SL || d_fun == `FUNC_SR) &&
+			    (d_opcode == `OPC_OP || d_opcode == `OPC_OP_IMM );
+	     x_is_signed_compare_o <= ( ( d_opcode == `OPC_BRANCH) && ( ( d_fun == `BRA_GE )|| (d_fun == `BRA_LT ) ) )
+	       || ( ( (d_opcode == `OPC_OP) || (d_opcode == `OPC_OP_IMM) ) && (d_fun == `FUNC_SLT ) );
 
-  
+	     x_is_add_o <= !((d_opcode == `OPC_OP && d_fun == `FUNC_ADD && f_ir_i[30]) || (d_fun == `FUNC_SLT) || (d_fun == `FUNC_SLTU));
+	     x_is_signed_alu_op_o <= (d_fun == `FUNC_SLT);
+	     
+	  end
+	
    
    
 

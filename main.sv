@@ -294,7 +294,7 @@ module main;
 	      begin 
 		 opc = "auipc"; 
 		 fun = ""; 
-		 args =		 $sformatf("%-3s %-3s %s", rd, " ", s_hex(DUT.d2x_imm_u)); 
+		 args =		 $sformatf("%-3s %-3s %s", rd, " ", s_hex(DUT.d2x_imm)); 
 		 
 	      end
 
@@ -302,7 +302,7 @@ module main;
 	      begin 
 		 opc = "lui"; 
 		 fun = ""; 
-		 args =		 $sformatf("%-3s %-3s %s", rd, " ", s_hex(DUT.d2x_imm_u)); 
+		 args =		 $sformatf("%-3s %-3s %s", rd, " ", s_hex(DUT.d2x_imm)); 
 		 
 	      end
 	    
@@ -310,7 +310,7 @@ module main;
 	      begin 
 		 opc = "op-imm";
 		 fun = decode_op(DUT.d2x_fun);
-		 args = $sformatf("%-3s %-3s %s", rd, rs1, s_hex(DUT.d2x_imm_i));
+		 args = $sformatf("%-3s %-3s %s", rd, rs1, s_hex(DUT.d2x_imm));
 	      end
 
 	    `OPC_OP: 
@@ -346,14 +346,14 @@ module main;
 		 opc = "ld";
 		 fun = decode_size(DUT.d2x_fun);
 //decode_op(DUT.d2x_fun);
-		 args = $sformatf("%-3s %-3s [0x%-08x + %s]", rd, rs1, DUT.execute.rs1, s_hex($signed(DUT.execute.d_imm_i_i)));
+		 args = $sformatf("%-3s %-3s [0x%-08x + %s]", rd, rs1, DUT.execute.rs1, s_hex($signed(DUT.execute.d_imm_i)));
 	      end
 	    `OPC_STORE: 
 	      begin 
 		 opc = "st";
 		 fun = decode_size(DUT.d2x_fun);
 //decode_op(DUT.d2x_fun);
-		 args = $sformatf("%-3s %-3s [0x%-08x + %s]", rs2, rs1, DUT.execute.rs1, s_hex($signed(DUT.execute.d_imm_s_i)));
+		 args = $sformatf("%-3s %-3s [0x%-08x + %s]", rs2, rs1, DUT.execute.rs1, s_hex($signed(DUT.execute.d_imm_i)));
 	      end
 
 	  endcase // case (d2x_opcode)

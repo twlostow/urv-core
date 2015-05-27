@@ -97,10 +97,28 @@ module rv_writeback
      end // always@ *
 
    
+   reg pending_load = 0, pending_store = 0, pending_load_hazard = 0;
+
+   always@(posedge clk_i)
+     begin
+	if(x_load_i && !dm_load_done_i) begin
+	   pending_load <= 1;
+	   pending_load_hazard <= x_load_hazard_i;
+	end else if (dm_load_done_i) begin
+	   pending_load <= 0;
+	   pending_load_hazard <= 0;
+	end
+	  
+	if(x_store_i && !dm_store_done_i)
+	  pending_store <= 1;
+	else if (dm_store_done_i)
+	  pending_store <= 0;
+	
+     end
    
 
    reg interlock_d = 0;
-   wire interlock = (x_load_i && dm_load_done_i && x_load_hazard_i);
+   wire interlock = ( ( x_load_i || pending_load ) && dm_load_done_i && (x_load_hazard_i || pending_load_hazard ) );
 
    always@(posedge clk_i)
      begin
@@ -113,9 +131,9 @@ module rv_writeback
 
    assign rf_rd_value_o = (x_load_i ? load_value : x_rd_value_i );
    assign rf_rd_o = (x_rd_i);
-   assign rf_rd_write_o = !interlock_d && (w_stall_i ? 1'b0 : (x_load_i && dm_load_done_i ? 1'b1 : x_rd_write_i ));
+   assign rf_rd_write_o = !interlock_d && (w_stall_i ? 1'b0 : ((x_load_i || pending_load) && dm_load_done_i ? 1'b1 : x_rd_write_i ));
       
-   assign w_stall_req_o = (x_load_i && !dm_load_done_i) || (x_store_i && !dm_store_done_i) || (interlock && !interlock_d);
+   assign w_stall_req_o = (pending_load && !dm_load_done_i) || (pending_store && !dm_store_done_i) || (interlock && !interlock_d);
 
 
    

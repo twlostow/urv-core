@@ -285,8 +285,8 @@ module rv_exec
    wire is_load = (d_opcode_i == `OPC_LOAD ? 1: 0) && d_valid_i && !x_kill_i;
    wire is_store = (d_opcode_i == `OPC_STORE ? 1: 0) && d_valid_i && !x_kill_i;
 
-   assign dm_load_o = is_load && !x_stall_i;
-   assign dm_store_o = is_store && !x_stall_i;
+   assign dm_load_o =  is_load;
+   assign dm_store_o = is_store;
    
    always@(posedge clk_i) 
       if (rst_i) begin
@@ -318,7 +318,7 @@ module rv_exec
 	 w_dm_addr_o <= dm_addr;
 	 
       end else begin // if (!x_stall_i)
-	 f_branch_take   <= 0;
+	// f_branch_take   <= 0;
 	 w_rd_write_o <= 0;
 	 w_load_o <= 0;
 	 w_store_o <= 0;

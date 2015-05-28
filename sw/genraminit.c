@@ -20,14 +20,28 @@ int main(int argc, char *argv[])
 	int i = 0;
 	int n = atoi(argv[2]);
 
-	while (!feof(f)) {
+
+	int base = 0;
+	int file_pos = 0;
+    
+	if(argc >= 5)
+	{
+	    file_pos = atoi(argv[3]);
+	    base = atoi(argv[4]);
+	}
+
+	fseek(f, file_pos, SEEK_SET);
+
+	while (!feof(f) && (n == 0 || (i < n))) {
 		fread(x, 1, 4, f);
-		printf("write %x %02X%02X%02X%02X\n", i++, x[3], x[2], x[1],
+		printf("write %x %02X%02X%02X%02X\n", base + i, x[3], x[2], x[1],
 		       x[0]);
+		i++;
 	}
 
 	for (; i < n;) {
-		printf("write %x %02X%02X%02X%02X\n", i++, 0, 0, 0, 0);
+		printf("write %x %02X%02X%02X%02X\n", base + i, 0, 0, 0, 0);
+		i++;
 	}
 	fclose(f);
 	return 0;

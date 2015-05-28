@@ -74,7 +74,8 @@ architecture wrapper of xrv_core is
       );
   end component;
 
-  signal cpu_rst  : std_logic;
+
+  signal cpu_rst, cpu_rst_d  : std_logic;
   signal im_addr  : std_logic_vector(31 downto 0);
   signal im_data  : std_logic_vector(31 downto 0);
   signal im_valid : std_logic;
@@ -234,7 +235,7 @@ begin
       rst_n_i => rst_n_i,
       clka_i  => clk_sys_i,
 
-      wea_i => ha_im_write,
+      wea_i => '0', --ha_im_write,
       aa_i  => im_addr_muxed(c_mem_address_bits + 1 downto 2),
       da_i  => ha_im_wdata,
       qa_o  => im_data,
@@ -252,8 +253,10 @@ begin
     if rising_edge(clk_sys_i) then
       if(cpu_rst = '1') then
         im_valid <= '0';
+        cpu_rst_d <= '1';
       else
-        im_valid <= not ha_im_access;
+        cpu_rst_d <= cpu_rst;
+        im_valid <= not ha_im_access and (not cpu_rst_d);
       end if;
     end if;
   end process;

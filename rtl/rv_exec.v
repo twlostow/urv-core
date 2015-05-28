@@ -293,7 +293,7 @@ module rv_exec
 	 f_branch_target_o <= 0;
 	 f_branch_take   <= 0;
 	 w_rd_write_o <= 0;
-	 w_rd_o <= 0;
+//	 w_rd_o <= 0;
 	 w_fun_o <= 0;
 	 w_load_o <= 0;
 	 w_store_o <= 0;

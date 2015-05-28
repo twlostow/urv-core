@@ -129,11 +129,11 @@ module rv_writeback
      end
    
 
-   assign rf_rd_value_o = (x_load_i ? load_value : x_rd_value_i );
+   assign rf_rd_value_o = (x_load_i || pending_load ? load_value : x_rd_value_i );
    assign rf_rd_o = (x_rd_i);
    assign rf_rd_write_o = !interlock_d && (w_stall_i ? 1'b0 : ((x_load_i || pending_load) && dm_load_done_i ? 1'b1 : x_rd_write_i ));
       
-   assign w_stall_req_o = (pending_load && !dm_load_done_i) || (pending_store && !dm_store_done_i) || (interlock && !interlock_d);
+   assign w_stall_req_o = ((x_load_i || pending_load) && !dm_load_done_i) || ((x_store_i || pending_store) && !dm_store_done_i) || (interlock && !interlock_d);
 
 
    

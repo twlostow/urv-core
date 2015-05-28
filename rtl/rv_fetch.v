@@ -64,7 +64,7 @@ module rv_fetch
  
    always@(posedge clk_i)
      if (rst_i) begin
-	pc <= -4;
+	pc <= 0;
 	ir <= 0;
 	f_valid_o <= 0;
 	rst_d <= 0;

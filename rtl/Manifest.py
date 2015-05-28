@@ -6,8 +6,7 @@ action = "simulation"
 target = "xilinx"
 include_dirs=["."]
 
-files = [ "main.sv",
-          "rv_cpu.v",
+files = [ "rv_cpu.v",
           "rv_exec.v",
           "rv_fetch.v",
           "rv_predecode.v",

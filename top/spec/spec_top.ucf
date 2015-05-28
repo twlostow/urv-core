@@ -1,0 +1,29 @@
+NET "clk_125m_pllref_n_i" LOC = F10;
+NET "clk_125m_pllref_n_i" IOSTANDARD = "LVDS_25";
+NET "clk_125m_pllref_p_i" LOC = G9;
+NET "clk_125m_pllref_p_i" IOSTANDARD = "LVDS_25";
+
+NET "clk_125m_pllref_p_i" TNM_NET = clk_125m_pllref_p_i;
+TIMESPEC TS_clk_125m_pllref_p_i = PERIOD "clk_125m_pllref_p_i" 8 ns HIGH 50%;
+NET "clk_125m_pllref_n_i" TNM_NET = clk_125m_pllref_n_i;
+TIMESPEC TS_clk_125m_pllref_n_i = PERIOD "clk_125m_pllref_n_i" 8 ns HIGH 50%;
+
+NET "uart_rxd_i" LOC= A2;
+NET "uart_rxd_i" IOSTANDARD=LVCMOS25;
+NET "uart_txd_o" LOC= B2;
+NET "uart_txd_o" IOSTANDARD=LVCMOS25;
+
+NET "leds_o[0]" LOC=c20;
+NET "leds_o[0]" IOSTANDARD=LVCMOS18;
+
+NET "leds_o[1]" LOC=f18;
+NET "leds_o[1]" IOSTANDARD=LVCMOS18;
+
+NET "leds_o[2]" LOC=f20;
+NET "leds_o[2]" IOSTANDARD=LVCMOS18;
+
+NET "leds_o[3]" LOC=g19;
+NET "leds_o[3]" IOSTANDARD=LVCMOS18;
+
+NET "button1_n_i" LOC=C22;
+NET "button1_n_i" IOSTANDARD=LVCMOS18;

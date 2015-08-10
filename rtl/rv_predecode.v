@@ -60,9 +60,14 @@ module rv_decode
  output reg 	   x_is_signed_alu_op_o,
  output reg 	   x_is_add_o,
  output reg 	   x_is_shift_o,
- output reg [1:0]  x_rd_source_o,
- output reg x_rd_write_o
- 
+ output reg [2:0]  x_rd_source_o,
+ output reg 	   x_rd_write_o,
+
+ output reg [11:0] x_csr_sel_o,
+ output reg [4:0]  x_csr_imm_o,
+ output reg 	   x_is_csr_o,
+
+ output reg 	   x_is_eret_o
  );
 
 
@@ -181,6 +186,8 @@ module rv_decode
 	  
 	  if(d_is_shift)
 	    x_rd_source_o <= `RD_SOURCE_SHIFTER;
+	  else if (d_opcode == `OPC_SYSTEM)
+	    x_rd_source_o <= `RD_SOURCE_CSR;
 	  else
 	    x_rd_source_o <= `RD_SOURCE_ALU;
 
@@ -188,12 +195,28 @@ module rv_decode
 	  case (d_opcode)
 	    `OPC_OP_IMM, `OPC_OP, `OPC_JAL, `OPC_JALR, `OPC_LUI, `OPC_AUIPC:
 	      x_rd_write_o <= 1;
+	    `OPC_SYSTEM:
+	      x_rd_write_o <= (d_fun != 0); // CSR instructions write to RD
 	    default:
 	      x_rd_write_o <= 0;
 	  endcase // case (d_opcode)
        end // if (!d_stall_i)
    
 	
+
+   // CSR/supervisor instructions
+   always@(posedge clk_i)
+	if (!d_stall_i)
+	  begin
+	     x_csr_imm_o <= f_ir_i[19:15];
+	     
+	     x_csr_sel_o <= f_ir_i[31:20];
+	     x_is_csr_o <= (d_opcode == `OPC_SYSTEM) && (d_fun != 0);
+	     x_is_eret_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == 12'b000100000000);
+	     
+	     
+	  end
+   
    
    
 

@@ -13,4 +13,7 @@ files = [ "rv_cpu.v",
           "rv_regfile.v",
           "rv_writeback.v",
           "rv_shifter.v",
-          "rv_multiply.v"];
+          "rv_multiply.v",
+	  "rv_csr.v",
+          "rv_timer.v",
+          "rv_exceptions.v"];

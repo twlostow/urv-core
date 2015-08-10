@@ -133,5 +133,9 @@ SECTIONS
   /* End of uninitialized data segment (used by syscalls.c for heap) */
   PROVIDE( end = . );
   _end = ALIGN(8);
-  PROVIDE( _fstack = 0xfffc );
+
+  PROVIDE( _fstack = 0xfffc - 0x200 );
+  PROVIDE( _fexception_stack = 0xfffc );
+
+
 }

@@ -51,11 +51,10 @@ module rv_fetch
    always@*
      if( x_bra_i )
        pc_next <= x_pc_bra_i;
-     else if (f_stall_i || !im_valid_i)
+     else if (!rst_d || f_stall_i || !im_valid_i)
        pc_next <= pc;
      else
        pc_next <= pc + 4;
-   
    
    
    assign f_ir_o = ir;
@@ -78,7 +77,7 @@ module rv_fetch
 	   f_pc_o <= pc;
 
 	   if(im_valid_i) begin
-	      ir <= im_data_i; // emit nop
+	      ir <= im_data_i; 
 	      f_valid_o <= (rst_d && !f_kill_i);
 	   end else begin// if (i_valid_i)
 	      f_valid_o <= 0;

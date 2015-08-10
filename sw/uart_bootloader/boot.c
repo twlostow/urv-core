@@ -24,6 +24,11 @@ uart_write_byte('\n');
 uart_write_byte('\r');
 }
 
+void trap_entry()
+{
+
+}
+
 int read_blocking(uint8_t *what)
 {
 	int cnt = 500000;

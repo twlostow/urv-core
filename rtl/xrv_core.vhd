@@ -57,6 +57,8 @@ architecture wrapper of xrv_core is
     port(
       clk_i : in std_logic;
       rst_i : in std_logic;
+		
+		irq_i : in std_logic;
 
       im_addr_o  : out std_logic_vector(31 downto 0);
       im_data_i  : in  std_logic_vector(31 downto 0);
@@ -208,6 +210,7 @@ begin
     port map (
       clk_i           => clk_sys_i,
       rst_i           => cpu_rst,
+		irq_i => '0',
       im_addr_o       => im_addr,
       im_data_i       => im_data,
       im_valid_i      => im_valid,

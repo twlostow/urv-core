@@ -59,156 +59,147 @@ add wave -noupdate -group RF /main/DUT/regfile/write
 add wave -noupdate -group RF /main/DUT/regfile/rs1_bypass
 add wave -noupdate -group RF /main/DUT/regfile/rs2_bypass
 add wave -noupdate -group RF -expand /main/DUT/regfile/bank0/ram
-add wave -noupdate -expand -group X /main/DUT/execute/clk_i
-add wave -noupdate -expand -group X /main/DUT/execute/rst_i
-add wave -noupdate -expand -group X /main/DUT/execute/x_stall_i
-add wave -noupdate -expand -group X /main/DUT/execute/x_kill_i
-add wave -noupdate -expand -group X /main/DUT/execute/x_stall_req_o
-add wave -noupdate -expand -group X /main/DUT/execute/w_stall_req_i
-add wave -noupdate -expand -group X /main/DUT/execute/d_pc_i
-add wave -noupdate -expand -group X /main/DUT/execute/d_rd_i
-add wave -noupdate -expand -group X /main/DUT/execute/d_fun_i
-add wave -noupdate -expand -group X /main/DUT/execute/rf_rs1_value_i
-add wave -noupdate -expand -group X /main/DUT/execute/rf_rs2_value_i
-add wave -noupdate -expand -group X /main/DUT/execute/d_valid_i
-add wave -noupdate -expand -group X /main/DUT/execute/d_load_hazard_i
-add wave -noupdate -expand -group X /main/DUT/execute/d_opcode_i
-add wave -noupdate -expand -group X /main/DUT/execute/d_shifter_sign_i
-add wave -noupdate -expand -group X /main/DUT/execute/d_imm_i
-add wave -noupdate -expand -group X /main/DUT/execute/d_is_signed_compare_i
-add wave -noupdate -expand -group X /main/DUT/execute/d_is_signed_alu_op_i
-add wave -noupdate -expand -group X /main/DUT/execute/d_is_add_i
-add wave -noupdate -expand -group X /main/DUT/execute/d_is_shift_i
-add wave -noupdate -expand -group X /main/DUT/execute/d_rd_source_i
-add wave -noupdate -expand -group X /main/DUT/execute/d_rd_write_i
-add wave -noupdate -expand -group X /main/DUT/execute/f_branch_target_o
-add wave -noupdate -expand -group X /main/DUT/execute/f_branch_take_o
-add wave -noupdate -expand -group X /main/DUT/execute/w_load_hazard_o
-add wave -noupdate -expand -group X /main/DUT/execute/w_fun_o
-add wave -noupdate -expand -group X /main/DUT/execute/w_load_o
-add wave -noupdate -expand -group X /main/DUT/execute/w_store_o
-add wave -noupdate -expand -group X /main/DUT/execute/w_rd_o
-add wave -noupdate -expand -group X /main/DUT/execute/w_rd_value_o
-add wave -noupdate -expand -group X /main/DUT/execute/w_rd_write_o
-add wave -noupdate -expand -group X /main/DUT/execute/w_dm_addr_o
-add wave -noupdate -expand -group X /main/DUT/execute/dm_addr_o
-add wave -noupdate -expand -group X /main/DUT/execute/dm_data_s_o
-add wave -noupdate -expand -group X /main/DUT/execute/dm_data_select_o
-add wave -noupdate -expand -group X /main/DUT/execute/dm_store_o
-add wave -noupdate -expand -group X /main/DUT/execute/dm_load_o
-add wave -noupdate -expand -group X /main/DUT/execute/dm_ready_i
-add wave -noupdate -expand -group X /main/DUT/execute/rs1
-add wave -noupdate -expand -group X /main/DUT/execute/rs2
-add wave -noupdate -expand -group X /main/DUT/execute/alu_op1
-add wave -noupdate -expand -group X /main/DUT/execute/alu_op2
-add wave -noupdate -expand -group X /main/DUT/execute/alu_result
-add wave -noupdate -expand -group X /main/DUT/execute/rd_value
-add wave -noupdate -expand -group X /main/DUT/execute/branch_take
-add wave -noupdate -expand -group X /main/DUT/execute/branch_condition_met
-add wave -noupdate -expand -group X /main/DUT/execute/branch_target
-add wave -noupdate -expand -group X /main/DUT/execute/dm_addr
-add wave -noupdate -expand -group X /main/DUT/execute/dm_data_s
-add wave -noupdate -expand -group X /main/DUT/execute/dm_select_s
-add wave -noupdate -expand -group X /main/DUT/execute/cmp_op1
-add wave -noupdate -expand -group X /main/DUT/execute/cmp_op2
-add wave -noupdate -expand -group X /main/DUT/execute/cmp_rs
-add wave -noupdate -expand -group X /main/DUT/execute/cmp_equal
-add wave -noupdate -expand -group X /main/DUT/execute/cmp_lt
-add wave -noupdate -expand -group X /main/DUT/execute/f_branch_take
-add wave -noupdate -expand -group X /main/DUT/execute/shifter_result
-add wave -noupdate -expand -group X /main/DUT/execute/alu_addsub_op1
-add wave -noupdate -expand -group X /main/DUT/execute/alu_addsub_op2
-add wave -noupdate -expand -group X /main/DUT/execute/alu_addsub_result
-add wave -noupdate -expand -group X /main/DUT/execute/x_stall_req_shifter
-add wave -noupdate -expand -group X /main/DUT/execute/x_stall_req_multiply
-add wave -noupdate -expand -group X /main/DUT/execute/x_stall_req_divide
-add wave -noupdate -expand -group X /main/DUT/execute/rd_shifter
-add wave -noupdate -expand -group X /main/DUT/execute/d_shamt_i
-add wave -noupdate -expand -group X /main/DUT/execute/d_is_arith_i
-add wave -noupdate -expand -group X /main/DUT/execute/is_load
-add wave -noupdate -expand -group X /main/DUT/execute/is_store
-add wave -noupdate -group W /main/DUT/writeback/clk_i
-add wave -noupdate -group W /main/DUT/writeback/rst_i
-add wave -noupdate -group W /main/DUT/writeback/w_stall_i
-add wave -noupdate -group W /main/DUT/writeback/w_stall_req_o
-add wave -noupdate -group W /main/DUT/writeback/interlock_d
-add wave -noupdate -group W /main/DUT/writeback/interlock
-add wave -noupdate -group W /main/DUT/writeback/x_fun_i
-add wave -noupdate -group W /main/DUT/writeback/x_load_i
-add wave -noupdate -group W /main/DUT/writeback/x_load_hazard_i
-add wave -noupdate -group W /main/DUT/writeback/x_store_i
-add wave -noupdate -group W /main/DUT/writeback/x_dm_addr_i
-add wave -noupdate -group W /main/DUT/writeback/x_rd_i
-add wave -noupdate -group W /main/DUT/writeback/x_rd_value_i
-add wave -noupdate -group W /main/DUT/writeback/x_rd_write_i
-add wave -noupdate -group W /main/DUT/writeback/dm_data_l_i
-add wave -noupdate -group W /main/DUT/writeback/dm_load_done_i
-add wave -noupdate -group W /main/DUT/writeback/dm_store_done_i
-add wave -noupdate -group W /main/DUT/writeback/rf_rd_value_o
-add wave -noupdate -group W /main/DUT/writeback/rf_rd_o
-add wave -noupdate -group W /main/DUT/writeback/rf_rd_write_o
-add wave -noupdate -group W /main/DUT/writeback/load_value
-add wave -noupdate -group Top /main/DUT/clk_i
-add wave -noupdate -group Top /main/DUT/rst_i
-add wave -noupdate -group Top /main/DUT/im_addr_o
-add wave -noupdate -group Top /main/DUT/im_data_i
-add wave -noupdate -group Top /main/DUT/im_valid_i
-add wave -noupdate -group Top /main/DUT/dm_addr_o
-add wave -noupdate -group Top /main/DUT/dm_data_s_o
-add wave -noupdate -group Top /main/DUT/dm_data_l_i
-add wave -noupdate -group Top /main/DUT/dm_data_select_o
-add wave -noupdate -group Top /main/DUT/dm_ready_i
-add wave -noupdate -group Top /main/DUT/dm_store_o
-add wave -noupdate -group Top /main/DUT/dm_load_o
-add wave -noupdate -group Top /main/DUT/dm_load_done_i
-add wave -noupdate -group Top /main/DUT/dm_store_done_i
-add wave -noupdate -group Top /main/DUT/f_stall
-add wave -noupdate -group Top /main/DUT/w_stall
-add wave -noupdate -group Top /main/DUT/x_stall
-add wave -noupdate -group Top /main/DUT/x_kill
-add wave -noupdate -group Top /main/DUT/f_kill
-add wave -noupdate -group Top /main/DUT/f2d_pc
-add wave -noupdate -group Top /main/DUT/f2d_pc_plus_4
-add wave -noupdate -group Top /main/DUT/f2d_ir
-add wave -noupdate -group Top /main/DUT/f2d_ir_valid
-add wave -noupdate -group Top /main/DUT/x2f_pc_bra
-add wave -noupdate -group Top /main/DUT/x2f_bra
-add wave -noupdate -group Top /main/DUT/f2d_valid
-add wave -noupdate -group Top /main/DUT/f_stall_req
-add wave -noupdate -group Top /main/DUT/d2x_valid
-add wave -noupdate -group Top /main/DUT/d2x_pc
-add wave -noupdate -group Top /main/DUT/rf_rs1
-add wave -noupdate -group Top /main/DUT/d2x_rs1
-add wave -noupdate -group Top /main/DUT/rf_rs2
-add wave -noupdate -group Top /main/DUT/d2x_rs2
-add wave -noupdate -group Top /main/DUT/d2x_rd
-add wave -noupdate -group Top /main/DUT/d2x_shamt
-add wave -noupdate -group Top /main/DUT/d2x_fun
-add wave -noupdate -group Top /main/DUT/d2x_opcode
-add wave -noupdate -group Top /main/DUT/d2x_shifter_sign
-add wave -noupdate -group Top /main/DUT/d_stall
-add wave -noupdate -group Top /main/DUT/d_kill
-add wave -noupdate -group Top /main/DUT/x2w_rd
-add wave -noupdate -group Top /main/DUT/x2w_rd_value
-add wave -noupdate -group Top /main/DUT/x2w_dm_addr
-add wave -noupdate -group Top /main/DUT/x2w_rd_write
-add wave -noupdate -group Top /main/DUT/x2w_fun
-add wave -noupdate -group Top /main/DUT/x2w_store
-add wave -noupdate -group Top /main/DUT/x2w_load
-add wave -noupdate -group Top /main/DUT/x_rs2_value
-add wave -noupdate -group Top /main/DUT/x_rs1_value
-add wave -noupdate -group Top /main/DUT/rf_rd
-add wave -noupdate -group Top /main/DUT/rf_rd_value
-add wave -noupdate -group Top /main/DUT/rf_rd_write
-add wave -noupdate -group Top /main/DUT/rf_bypass_rd_value
-add wave -noupdate -group Top /main/DUT/rf_bypass_rd_write
-add wave -noupdate -group Top /main/DUT/x_load_comb
-add wave -noupdate -group Top /main/DUT/x_stall_req
-add wave -noupdate -group Top /main/DUT/w_stall_req
-add wave -noupdate -group Top /main/DUT/x2f_bra_d0
-add wave -noupdate -group Top /main/DUT/x2f_bra_d1
+add wave -noupdate -group X /main/DUT/execute/clk_i
+add wave -noupdate -group X /main/DUT/execute/rst_i
+add wave -noupdate -group X /main/DUT/execute/x_stall_i
+add wave -noupdate -group X /main/DUT/execute/x_kill_i
+add wave -noupdate -group X /main/DUT/execute/x_stall_req_o
+add wave -noupdate -group X /main/DUT/execute/w_stall_req_i
+add wave -noupdate -group X /main/DUT/execute/d_pc_i
+add wave -noupdate -group X /main/DUT/execute/d_rd_i
+add wave -noupdate -group X /main/DUT/execute/d_fun_i
+add wave -noupdate -group X /main/DUT/execute/rf_rs1_value_i
+add wave -noupdate -group X /main/DUT/execute/rf_rs2_value_i
+add wave -noupdate -group X /main/DUT/execute/d_valid_i
+add wave -noupdate -group X /main/DUT/execute/d_load_hazard_i
+add wave -noupdate -group X /main/DUT/execute/d_opcode_i
+add wave -noupdate -group X /main/DUT/execute/d_shifter_sign_i
+add wave -noupdate -group X /main/DUT/execute/d_is_csr_i
+add wave -noupdate -group X /main/DUT/execute/d_is_eret_i
+add wave -noupdate -group X /main/DUT/execute/d_csr_imm_i
+add wave -noupdate -group X /main/DUT/execute/d_csr_sel_i
+add wave -noupdate -group X /main/DUT/execute/d_imm_i
+add wave -noupdate -group X /main/DUT/execute/d_is_signed_compare_i
+add wave -noupdate -group X /main/DUT/execute/d_is_signed_alu_op_i
+add wave -noupdate -group X /main/DUT/execute/d_is_add_i
+add wave -noupdate -group X /main/DUT/execute/d_is_shift_i
+add wave -noupdate -group X /main/DUT/execute/d_rd_source_i
+add wave -noupdate -group X /main/DUT/execute/d_rd_write_i
+add wave -noupdate -group X /main/DUT/execute/f_branch_target_o
+add wave -noupdate -group X /main/DUT/execute/f_branch_take_o
+add wave -noupdate -group X /main/DUT/execute/w_load_hazard_o
+add wave -noupdate -group X /main/DUT/execute/irq_i
+add wave -noupdate -group X /main/DUT/execute/w_fun_o
+add wave -noupdate -group X /main/DUT/execute/w_load_o
+add wave -noupdate -group X /main/DUT/execute/w_store_o
+add wave -noupdate -group X /main/DUT/execute/w_rd_o
+add wave -noupdate -group X /main/DUT/execute/w_rd_value_o
+add wave -noupdate -group X /main/DUT/execute/w_rd_write_o
+add wave -noupdate -group X /main/DUT/execute/w_dm_addr_o
+add wave -noupdate -group X /main/DUT/execute/dm_addr_o
+add wave -noupdate -group X /main/DUT/execute/dm_data_s_o
+add wave -noupdate -group X /main/DUT/execute/dm_data_select_o
+add wave -noupdate -group X /main/DUT/execute/dm_store_o
+add wave -noupdate -group X /main/DUT/execute/dm_load_o
+add wave -noupdate -group X /main/DUT/execute/dm_ready_i
+add wave -noupdate -group X /main/DUT/execute/csr_time_i
+add wave -noupdate -group X /main/DUT/execute/csr_cycles_i
+add wave -noupdate -group X /main/DUT/execute/timer_tick_i
+add wave -noupdate -group X /main/DUT/execute/rs1
+add wave -noupdate -group X /main/DUT/execute/rs2
+add wave -noupdate -group X /main/DUT/execute/alu_op1
+add wave -noupdate -group X /main/DUT/execute/alu_op2
+add wave -noupdate -group X /main/DUT/execute/alu_result
+add wave -noupdate -group X /main/DUT/execute/rd_value
+add wave -noupdate -group X /main/DUT/execute/branch_take
+add wave -noupdate -group X /main/DUT/execute/branch_condition_met
+add wave -noupdate -group X /main/DUT/execute/branch_target
+add wave -noupdate -group X /main/DUT/execute/dm_addr
+add wave -noupdate -group X /main/DUT/execute/dm_data_s
+add wave -noupdate -group X /main/DUT/execute/dm_select_s
+add wave -noupdate -group X /main/DUT/execute/cmp_op1
+add wave -noupdate -group X /main/DUT/execute/cmp_op2
+add wave -noupdate -group X /main/DUT/execute/cmp_rs
+add wave -noupdate -group X /main/DUT/execute/cmp_equal
+add wave -noupdate -group X /main/DUT/execute/cmp_lt
+add wave -noupdate -group X /main/DUT/execute/f_branch_take
+add wave -noupdate -group X /main/DUT/execute/x_stall_req_shifter
+add wave -noupdate -group X /main/DUT/execute/x_stall_req_multiply
+add wave -noupdate -group X /main/DUT/execute/x_stall_req_divide
+add wave -noupdate -group X /main/DUT/execute/rd_shifter
+add wave -noupdate -group X /main/DUT/execute/rd_csr
+add wave -noupdate -group X /main/DUT/execute/rd_mul
+add wave -noupdate -group X /main/DUT/execute/rd_div
+add wave -noupdate -group X /main/DUT/execute/exception
+add wave -noupdate -group X /main/DUT/execute/csr_mie
+add wave -noupdate -group X /main/DUT/execute/csr_mip
+add wave -noupdate -group X /main/DUT/execute/csr_mepc
+add wave -noupdate -group X /main/DUT/execute/csr_mstatus
+add wave -noupdate -group X /main/DUT/execute/csr_mcause
+add wave -noupdate -group X /main/DUT/execute/csr_write_value
+add wave -noupdate -group X /main/DUT/execute/csr_mmause
+add wave -noupdate -group X /main/DUT/execute/alu_addsub_op1
+add wave -noupdate -group X /main/DUT/execute/alu_addsub_op2
+add wave -noupdate -group X /main/DUT/execute/alu_addsub_result
+add wave -noupdate -group X /main/DUT/execute/is_load
+add wave -noupdate -group X /main/DUT/execute/is_store
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/clk_i
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/rst_i
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/x_stall_i
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/x_kill_i
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/d_is_csr_i
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/d_fun_i
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/d_csr_imm_i
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/d_csr_sel_i
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/exp_irq_i
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/exp_tick_i
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/exp_breakpoint_i
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/exp_unaligned_load_i
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/exp_unaligned_store_i
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/exp_invalid_insn_i
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/x_csr_write_value_i
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/x_exception_o
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/x_exception_pc_i
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/x_exception_pc_o
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/csr_mstatus_o
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/csr_mip_o
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/csr_mie_o
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/csr_mepc_o
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/csr_mcause_o
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/csr_mepc
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/csr_mie
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/csr_ie
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/exception
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/cause
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/except_vec_masked
+add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/csr_mip
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/clk_i
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/rst_i
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/x_stall_i
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/x_kill_i
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/d_is_csr_i
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/d_fun_i
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/d_csr_imm_i
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/d_csr_sel_i
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/d_csr_load_en_i
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/d_rs1_i
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/x_rd_o
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/csr_time_i
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/csr_cycles_i
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/x_csr_write_value_o
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/csr_mstatus_i
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/csr_mip_i
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/csr_mie_i
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/csr_mepc_i
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/csr_mcause_i
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/csr_mscratch
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/csr_in1
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/csr_in2
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/csr_out
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/bop_mask
+add wave -noupdate -expand -group CSR /main/DUT/execute/csr_regs/bop_index
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {32345000 ps} 0}
+WaveRestoreCursors {{Cursor 1} {1471607 ps} 0}
 configure wave -namecolwidth 250
 configure wave -valuecolwidth 100
 configure wave -justifyvalue left
@@ -223,4 +214,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {31531345 ps} {33845553 ps}
+WaveRestoreZoom {893047 ps} {2050167 ps}

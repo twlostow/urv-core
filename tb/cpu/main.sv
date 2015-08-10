@@ -108,12 +108,32 @@ module main;
 	dm_data_l <= mem[(dm_addr/4) % mem_size];
    end	   
 
+
+   reg irq = 0;
+   wire irq_ack;
+
+
+   initial begin
+      repeat(100)
+	@(posedge clk);
+
+      irq<=1;
+      @(posedge clk);
+      irq <= 0;
+      @(posedge clk);
+
+   end // initial begin
+   
+      
+      
    
    rv_cpu DUT
      (
       .clk_i(clk),
       .rst_i(rst),
 
+      .irq_i ( irq ),
+      
       // instruction mem I/F
       .im_addr_o(im_addr),
       .im_data_i(im_data),
@@ -137,7 +157,8 @@ module main;
 
    
    initial begin
-      load_ram("sw/test2/test2.ram");
+//      load_ram("../../sw/test_csr/test_csr.ram");
+      load_ram("../../sw/test2/test2.ram");
       repeat(3) @(posedge clk);
       rst = 0;
    end
@@ -215,6 +236,22 @@ module main;
 	31: return "t6";
       endcase // case (fun)
    endfunction // decode_regname
+
+   function string decode_csr(bit[11:0] csr);
+      case(csr)
+	`CSR_ID_CYCLESH: return "cyclesh";
+	`CSR_ID_CYCLESL: return "cyclesl";
+	`CSR_ID_TIMEH: return "timeh";
+	`CSR_ID_TIMEL: return "timel";
+	`CSR_ID_MSCRATCH: return "mscratch";
+	`CSR_ID_MEPC: return "mepc";
+	`CSR_ID_MSTATUS: return "mstatus";
+	`CSR_ID_MCAUSE: return "mcause";
+	default: return "???";
+      endcase // case (csr)
+      
+   endfunction // decode_csr
+   
    
 
    task automatic verify_branch(input [31:0] rs1, input[31:0] rs2, input take, input [2:0] fun);
@@ -321,9 +358,10 @@ module main;
 
 	  
 	  
+	  
 	  reg [31:0] imm;
 	  
-	  //	  $display("Opcode %x", DUT.d2x_opcode);
+//	  	  $display("Opcode %x", DUT.d2x_opcode);
 	  
 	  case (DUT.d2x_opcode)
 	    `OPC_AUIPC: 
@@ -395,13 +433,38 @@ module main;
 //decode_op(DUT.d2x_fun);
 		 args = $sformatf("%-3s %-3s [0x%-08x + %s]", rs2, rs1, DUT.execute.rs1, s_hex($signed(DUT.execute.d_imm_i)));
 	      end
+	    `OPC_SYSTEM:
+	      begin
+		 
+		 case (DUT.d2x_fun)
+		   `CSR_OP_CSRRWI:  begin
+		      opc = "csrrwi";
+		      args = $sformatf("%-3s %-3s 0x%08x", rd, decode_csr(DUT.d2x_csr_sel), ((DUT.d2x_csr_imm)));
+		   end
+		   `CSR_OP_CSRRSI:  begin
+		      opc = "csrrsi";
+		      args = $sformatf("%-3s %-3s 0x%08x", rd, decode_csr(DUT.d2x_csr_sel), ((DUT.d2x_csr_imm)));
+		   end
+		   `CSR_OP_CSRRCI:  begin
+		      opc = "csrrci";
+		      args = $sformatf("%-3s %-3s 0x%08x", rd, decode_csr(DUT.d2x_csr_sel), ((DUT.d2x_csr_imm)));
+		   end
+		   `CSR_OP_CSRRW: begin
+		      opc = "csrrw";
+		      args = $sformatf("%-3s %-3s %-3s [0x%08x]", rd, decode_csr(DUT.d2x_csr_sel), rs1, DUT.execute.rs1);
+		   end
+		   
+	   endcase // case (d_fun_i)
+		 
+	      end
+	    
+	    
 
 	  endcase // case (d2x_opcode)
 
 	  $display("%08x: %-8s %-3s %s", DUT.execute.d_pc_i, opc, fun, args);
   	  $fwrite(f_exec_log,"%08x: %-8s %-3s %s\n", DUT.execute.d_pc_i, opc, fun, args);
-	  $fwrite(f_exec_log,": PC %08x OP %08x\n", DUT.execute.d_pc_i, DUT.decode.x_ir);
-	  
+	  $fwrite(f_exec_log,": PC %08x OP %08x", DUT.execute.d_pc_i, DUT.decode.x_ir);
 	  
 
 	  

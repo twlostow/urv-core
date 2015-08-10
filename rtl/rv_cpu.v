@@ -27,6 +27,8 @@ module rv_cpu
    input 	 clk_i,
    input 	 rst_i,
 
+   input 	 irq_i,
+   
    // instruction mem I/F
    output [31:0] im_addr_o,
    input [31:0]  im_data_i,
@@ -51,7 +53,7 @@ module rv_cpu
    wire 	 x_kill;
    wire 	 f_kill;
  
-   wire [31:0] 	 f2d_pc, f2d_pc_plus_4, f2d_ir;
+   wire [31:0] 	 f2d_pc, f2d_ir;
    wire 	 f2d_ir_valid;
    wire [31:0] 	 x2f_pc_bra;
    wire 	 x2f_bra;
@@ -77,13 +79,17 @@ module rv_cpu
    wire d2x_is_signed_alu_op;
    wire d2x_is_add_o;
    wire d2x_is_shift_o;
-   wire [1:0] d2x_rd_source;
+   wire [2:0] d2x_rd_source;
    wire       d2x_rd_write;
-   
+   wire [11:0] d2x_csr_sel;
+   wire [4:0]  d2x_csr_imm;
+   wire        d2x_is_csr, d2x_is_eret, d2x_csr_load_en;
+	       
    
    wire 	 d2x_load_hazard;
    wire 	 d_stall, d_kill;
-
+   wire [39:0] 	 csr_time, csr_cycles;
+   
    
    rv_fetch fetch
      (
@@ -142,7 +148,14 @@ module rv_cpu
       .x_is_add_o(d2x_is_add),
       .x_is_shift_o(d2x_is_shift),
       .x_rd_source_o(d2x_rd_source),
-      .x_rd_write_o(d2x_rd_write)
+      .x_rd_write_o(d2x_rd_write),
+
+      .x_csr_sel_o ( d2x_csr_sel),
+      .x_csr_imm_o ( d2x_csr_imm),
+      .x_is_csr_o ( d2x_is_csr ),
+      .x_is_eret_o ( d2x_is_eret )
+
+
       );
 
       wire [4:0] 	 x2w_rd;
@@ -196,6 +209,8 @@ module rv_cpu
    
 
    wire 	 w_stall_req;
+
+ 
    
    rv_exec execute
      (
@@ -204,11 +219,19 @@ module rv_cpu
 
       .x_stall_i(x_stall),
       .x_kill_i(x_kill),
+
+      .irq_i ( irq_i ),
+      
       .x_stall_req_o(x_stall_req),
       .w_stall_req_i(w_stall_req),
 
       .d_valid_i(d2x_valid),
 
+      .d_is_csr_i ( d2x_is_csr ),
+      .d_is_eret_i ( d2x_is_eret ),
+      .d_csr_imm_i ( d2x_csr_imm ),
+      .d_csr_sel_i (d2x_csr_sel),
+      
       .d_load_hazard_i(d2x_load_hazard),
       .d_pc_i(d2x_pc),
       .d_rd_i(d2x_rd),
@@ -248,7 +271,12 @@ module rv_cpu
       .dm_data_select_o(dm_data_select_o),
       .dm_store_o(dm_store_o),
       .dm_load_o(dm_load_o),
-      .dm_ready_i(dm_ready_i)
+      .dm_ready_i(dm_ready_i),
+
+      .csr_time_i (csr_time),
+      .csr_cycles_i (csr_cycles),
+      .timer_tick_i (sys_tick)
+
    );
 
    
@@ -280,6 +308,17 @@ module rv_cpu
       .rf_rd_o(rf_rd),
       .rf_rd_write_o(rf_rd_write)
    );
+
+   
+   rv_timer ctimer (
+		    .clk_i(clk_i),
+		    .rst_i(rst_i),
+
+		    .csr_time_o(csr_time),
+		    .csr_cycles_o(csr_cycles),
+   
+		    .sys_tick_o(sys_tick)
+		    );
 
    reg 		 x2f_bra_d0, x2f_bra_d1;
 

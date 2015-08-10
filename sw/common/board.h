@@ -24,6 +24,8 @@
 
 #include <stdint.h>
 
+#include "riscv.h"
+
 #define BASE_CLOCK 62500000 // Xtal frequency
 
 #define BASE_UART 0x20000

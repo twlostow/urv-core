@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdint.h>
 
 char dupa[64];
 
@@ -165,6 +166,22 @@ void test_floats()
 }
 #endif
 
+#define read_csr(reg) ({ unsigned long __tmp; \
+  asm volatile ("csrr %0, " #reg : "=r"(__tmp)); \
+  __tmp; })
+
+uint32_t sys_get_cycles()
+{
+    return read_csr (cycle);
+}
+
+volatile int irq_counter = 0;
+
+void handle_trap()
+{
+    irq_counter++;
+}
+
 main()
 {
     char *s = hello;
@@ -172,7 +189,12 @@ main()
 
 //    test_floats();
 
+    uint32_t start = sys_get_cycles();
     test_sort();
+    uint32_t end = sys_get_cycles();
+
+    print_hex(end - start);
+    print_hex(irq_counter);
 
 //    for(i=0;i<5;i++)
 //    float y = cos(x);
@@ -184,7 +206,11 @@ main()
 //    y = x << 2;
 //    print_hex(*(int*)&y);
 
-    for(;;);
+    for(;;)
+    {
+	for(i=0;i<10000;i++) asm volatile("nop");
+        print_hex(irq_counter);
+    }
 /*
     x = 0xfffffb2e;
 

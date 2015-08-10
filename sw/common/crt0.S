@@ -1,9 +1,25 @@
   .section    .boot, "ax", @progbits
 
+#define MSTATUS_IE 0x00000001
+#define EXCEPT_IRQ (1<<10)
+#define EXCEPT_TIMER (1<<9)
+
  .global _start
 _start:
+    j _entry
+
+.org 0x40
+.extern trap_entry
+_exception_handler:
+    j  trap_entry
+
+
+_entry:
+
         la      gp, _gp                 # Initialize global pointer
 	la      sp, _fstack
+	la t0, _fexception_stack
+	csrrw t0, mscratch, t0
 
 # clear the bss segment
 	la	t0, _fbss
@@ -17,5 +33,6 @@ _start:
 	addi	t0, t0, 4
 #endif
 	bltu	t0, t1, 1b
+
 
         call    main

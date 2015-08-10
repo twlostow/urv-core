@@ -41,6 +41,7 @@ module rv_exec
    input [31:0]      rf_rs1_value_i,
    input [31:0]      rf_rs2_value_i,
 
+
    input 	     d_valid_i,
 
    input 	     d_load_hazard_i,
@@ -48,18 +49,25 @@ module rv_exec
    input [4:0] 	     d_opcode_i,
    input 	     d_shifter_sign_i,
 
+   input 	     d_is_csr_i,
+   input 	     d_is_eret_i,
+   input [4:0] 	     d_csr_imm_i,
+   input [11:0]      d_csr_sel_i,
+      
    input [31:0]      d_imm_i,
    input 	     d_is_signed_compare_i,
    input 	     d_is_signed_alu_op_i,
    input 	     d_is_add_i,
    input 	     d_is_shift_i,
-   input [1:0] 	     d_rd_source_i,
+   input [2:0] 	     d_rd_source_i,
    input 	     d_rd_write_i,
    
    output reg [31:0] f_branch_target_o,
    output 	     f_branch_take_o,
 
    output 	     w_load_hazard_o,
+
+   input 	     irq_i,
    
    // Writeback stage I/F
    output reg [2:0 ] w_fun_o,
@@ -77,8 +85,15 @@ module rv_exec
    output [3:0]      dm_data_select_o,
    output 	     dm_store_o,
    output 	     dm_load_o,
-   input 	     dm_ready_i
+   input 	     dm_ready_i,
+
+   input [39:0]      csr_time_i,
+   input [39:0]      csr_cycles_i,
+   input 	     timer_tick_i
+   
    );
+
+   parameter g_exception_vector = 'h40;
 
    wire [31:0] 	 rs1, rs2;
 
@@ -87,8 +102,7 @@ module rv_exec
    
    reg [31:0] 	 alu_op1, alu_op2, alu_result;
    reg [31:0] 	 rd_value;
-   
-   
+      
    reg 		 branch_take;
    reg 		 branch_condition_met;
    
@@ -106,6 +120,85 @@ module rv_exec
 
    reg 	       f_branch_take;
    
+   wire        x_stall_req_shifter;
+   wire        x_stall_req_multiply = 0;
+   wire        x_stall_req_divide   = 0;
+
+   wire [31:0] rd_shifter;
+   wire [31:0] rd_csr;
+   wire [31:0] rd_mul;
+   wire [31:0] rd_div;
+
+   wire        exception;
+   wire [31:0] csr_mie, csr_mip, csr_mepc, csr_mstatus,csr_mcause;
+   wire [31:0] csr_write_value;
+   wire [31:0] exception_address;
+   
+   
+   rv_csr csr_regs
+     (
+      
+      .clk_i(clk_i),
+      .rst_i(rst_i),
+
+      .x_stall_i(x_stall_i),
+      .x_kill_i(x_kill_i),
+      
+      .d_is_csr_i(d_is_csr_i),
+      .d_fun_i(d_fun_i),
+      .d_csr_imm_i(d_csr_imm_i),
+      .d_csr_sel_i (d_csr_sel_i),
+      
+      .d_rs1_i(rs1),
+
+      .x_rd_o(rd_csr),
+      .x_csr_write_value_o(csr_write_value),
+
+      .csr_time_i(csr_time_i),
+      .csr_cycles_i(csr_cycles_i),
+
+      .csr_mstatus_i(csr_mstatus),
+      .csr_mip_i(csr_mip),
+      .csr_mie_i(csr_mie),
+      .csr_mepc_i(csr_mepc),
+      .csr_mcause_i(csr_mmause)
+      );
+
+   rv_exceptions exception_unit 
+     (
+      .clk_i(clk_i),
+      .rst_i(rst_i),
+
+      .x_stall_i (x_stall_i),
+      .x_kill_i (x_kill_i),
+      
+      .d_is_csr_i(d_is_csr_i),
+      .d_is_eret_i (d_is_eret_i),
+      .d_fun_i(d_fun_i),
+      .d_csr_imm_i(d_csr_imm_i),
+      .d_csr_sel_i(d_csr_sel_i),
+      .x_csr_write_value_i(csr_write_value),
+      
+      .exp_irq_i(irq_i),
+      .exp_tick_i(timer_tick_i),
+      .exp_breakpoint_i(1'b0),
+      .exp_unaligned_load_i(1'b0),
+      .exp_unaligned_store_i(1'b0),
+      .exp_invalid_insn_i(1'b0),
+
+      
+      .x_exception_o(exception),
+      .x_exception_pc_i(d_pc_i),
+      .x_exception_pc_o(exception_address),
+
+      .csr_mstatus_o(csr_mstatus),
+      .csr_mip_o(csr_mip),
+      .csr_mie_o(csr_mie),
+      .csr_mepc_o(csr_mepc),
+      .csr_mcause_o(csr_mcause)
+
+      );
+
    
    // branch condition decoding   
    always@*
@@ -120,13 +213,16 @@ module rv_exec
      endcase // case (d_fun_i)
    
    always@*
-     case (d_opcode_i)
-       `OPC_JAL: branch_target <= d_pc_i + d_imm_i;
-       `OPC_JALR: branch_target <= rs1 + d_imm_i;
-       `OPC_BRANCH: branch_target <= d_pc_i + d_imm_i;
-       
-       default: branch_target<= 32'hx;
-     endcase // case (d_opcode_i)
+     if(d_is_eret_i )
+       branch_target <= exception_address;
+     else if ( exception )
+       branch_target <= g_exception_vector;
+     else case (d_opcode_i)
+	    `OPC_JAL: branch_target <= d_pc_i + d_imm_i;
+	    `OPC_JALR: branch_target <= rs1 + d_imm_i;
+	    `OPC_BRANCH: branch_target <= d_pc_i + d_imm_i;
+	    default: branch_target<= 32'hx;
+	  endcase // case (d_opcode_i)
 
    // decode ALU operands
    always@*
@@ -185,12 +281,6 @@ module rv_exec
 	endcase // case (d_fun_i)
      end // always@ *
 
-   wire x_stall_req_shifter;
-   wire x_stall_req_multiply = 0;
-   wire x_stall_req_divide   = 0;
-
-   wire [31:0] rd_shifter;
-   
    
    rv_shifter shifter 
      (
@@ -215,6 +305,7 @@ module rv_exec
      case (d_rd_source_i)
        `RD_SOURCE_ALU: rd_value <= alu_result;
        `RD_SOURCE_SHIFTER : rd_value <= rd_shifter;
+       `RD_SOURCE_CSR: rd_value <= rd_csr;
        default: rd_value <= 32'hx;
      endcase // case (x_rd_source_i)
    
@@ -266,14 +357,17 @@ module rv_exec
 
    //branch decision
    always@*
-     case (d_opcode_i)
-       `OPC_JAL, `OPC_JALR: 
-	 branch_take <= 1;
-       `OPC_BRANCH:
-	 branch_take <= branch_condition_met;
-       default: 
-	 branch_take <= 0;
-     endcase // case (d_opcode_i)
+     if( exception || d_is_eret_i)
+       branch_take <= 1;
+     else
+       case (d_opcode_i)
+	 `OPC_JAL, `OPC_JALR: 
+	   branch_take <= 1;
+	 `OPC_BRANCH:
+	   branch_take <= branch_condition_met;
+	 default: 
+	   branch_take <= 0;
+       endcase // case (d_opcode_i)
      
    
    // generate load/store requests
@@ -287,6 +381,7 @@ module rv_exec
 
    assign dm_load_o =  is_load;
    assign dm_store_o = is_store;
+
    
    always@(posedge clk_i) 
       if (rst_i) begin
@@ -308,12 +403,11 @@ module rv_exec
 	 
 //	 if(!shifter_stall_req)
 	 w_rd_value_o <= rd_value;
-	 w_rd_write_o <= d_rd_write_i && !x_kill_i && d_valid_i;
+	 w_rd_write_o <= d_rd_write_i && !x_kill_i && d_valid_i && !exception;
 
 	 w_fun_o <= d_fun_i;
-   w_load_o <= is_load;
-   
-	 w_store_o <= is_store;
+	 w_load_o <= is_load && !exception;
+	 w_store_o <= is_store && !exception;
 	 
 	 w_dm_addr_o <= dm_addr;
 	 

@@ -19,15 +19,27 @@ void delay(int v)
     for(i=0;i<v;i++);
 }
 
+volatile int irq_count = 0;
+
+void handle_trap()
+{
+    irq_count++;
+}
+
+extern void coremark_main();
 main()
 {
     uart_init_hw();
 
+//    coremark_main();
+
+//    for(;;);
 
 
     for(;;)
     {
-        puts("Hello, world!\n\r");
+//	volatile int t = rdtime();
+//        puts("Hello, world!\n\r");
 	gpio_set(0, 1);
 	gpio_set(1, 1);
 	gpio_set(2, 1);

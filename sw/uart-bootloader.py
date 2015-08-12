@@ -62,3 +62,10 @@ while(ser.read(1) != 'G'):
 	time.sleep(100e-6)
 
 print("Programming done!")
+
+while True:
+	b=ser.read(1)
+	if(b):
+		sys.stdout.write(b)
+	else:
+		time.sleep(0.01)

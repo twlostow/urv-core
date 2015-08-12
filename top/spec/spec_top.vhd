@@ -47,6 +47,7 @@ entity spec_top is
     uart_txd_o : out std_logic;
     uart_rxd_i : in  std_logic;
 
+
     leds_o: out std_logic_vector(3 downto 0)
     );
 
@@ -227,7 +228,7 @@ begin  -- rtl
       gpio_in_i  => gpio_in,
       gpio_oen_o => gpio_oen);
 
- leds_o <= gpio_out(3 downto 0);
+   leds_o <= gpio_out(3 downto 0);
  
 end rtl;
 

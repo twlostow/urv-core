@@ -15,9 +15,12 @@ _exception_handler:
 
 
 _entry:
+	nop
+	nop
 
-        la      gp, _gp                 # Initialize global pointer
+	la      gp, _gp                 # Initialize global pointer
 	la      sp, _fstack
+	
 	la t0, _fexception_stack
 	csrrw t0, mscratch, t0
 

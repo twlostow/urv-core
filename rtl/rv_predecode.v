@@ -179,7 +179,7 @@ module rv_decode
 	  x_is_signed_compare_o <= ( ( d_opcode == `OPC_BRANCH) && ( ( d_fun == `BRA_GE )|| (d_fun == `BRA_LT ) ) )
 	    || ( ( (d_opcode == `OPC_OP) || (d_opcode == `OPC_OP_IMM) ) && (d_fun == `FUNC_SLT ) );
 
-	  x_is_add_o <= !((d_opcode == `OPC_OP && d_fun == `FUNC_ADD && f_ir_i[30]) || (d_fun == `FUNC_SLT) || (d_fun == `FUNC_SLTU));
+	  x_is_add_o <= (d_opcode == `OPC_JAL) || (!((d_opcode == `OPC_OP && d_fun == `FUNC_ADD && f_ir_i[30]) || (d_fun == `FUNC_SLT) || (d_fun == `FUNC_SLTU)));
 
 	  x_is_signed_alu_op_o <= (d_fun == `FUNC_SLT);
 

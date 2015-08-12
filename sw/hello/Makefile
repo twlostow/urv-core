@@ -8,7 +8,7 @@ OBJCOPY =	$(CROSS_COMPILE)objcopy
 SIZE =		$(CROSS_COMPILE)size
 
 CFLAGS = -g -m32 -msoft-float -march=RV32I  -I. -I../common
-OBJS = ../common/crt0.o ../common/irq.o main.o ../common/uart.o
+OBJS = ../common/crtuser.o main.o ../common/uart.o ../common/printf.o ../common/vsprintf-xint.o
 LDS = ../common/ram2.ld
 OUTPUT=hello
 
@@ -16,7 +16,8 @@ $(OUTPUT): $(LDS) $(OBJS)
 	${CC} -g -m32 -msoft-float  -march=RV32I -o $(OUTPUT).elf -nostartfiles $(OBJS)  -lm -L../coremark -lcoremark -T $(LDS)
 	${OBJCOPY} -O binary $(OUTPUT).elf $(OUTPUT).bin
 	${OBJDUMP} -D $(OUTPUT).elf > disasm.S
-#	../genraminit $(OUTPUT).bin 1024 0 0 > uart-bootloader.ram
+	../genraminit $(OUTPUT).bin 16384 > $(OUTPUT).ram
+
 	$(SIZE) $(OUTPUT).elf
 
 clean:

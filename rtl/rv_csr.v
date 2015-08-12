@@ -55,7 +55,7 @@ module rv_csr
 
    );
    
-   reg [31:0] 	csr_mscratch = 0; 
+   reg [31:0] 	csr_mscratch; 
    
    reg [31:0] 	csr_in1;
    reg [31:0] 	csr_in2;

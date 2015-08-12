@@ -156,8 +156,9 @@ module main;
 
 
    
+
    initial begin
-//      load_ram("../../sw/test_csr/test_csr.ram");
+//      load_ram("../../sw/uart_bootloader/uart-bootloader.ram");
       load_ram("../../sw/test2/test2.ram");
       repeat(3) @(posedge clk);
       rst = 0;

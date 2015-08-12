@@ -22,6 +22,33 @@
 
 `timescale 1ns/1ps
 
+module chipscope_icon(
+    CONTROL0) /* synthesis syn_black_box syn_noprune=1 */;
+
+
+inout [35 : 0] CONTROL0;
+
+endmodule
+
+module chipscope_ila(
+    CONTROL,
+    CLK,
+    TRIG0,
+    TRIG1,
+    TRIG2,
+    TRIG3) /* synthesis syn_black_box syn_noprune=1 */;
+
+
+inout [35 : 0] CONTROL;
+input CLK;
+input [31 : 0] TRIG0;
+input [31 : 0] TRIG1;
+input [31 : 0] TRIG2;
+input [31 : 0] TRIG3;
+
+endmodule
+
+
 module rv_cpu
   (
    input 	 clk_i,
@@ -60,7 +87,6 @@ module rv_cpu
    wire 	 f2d_valid;
    
 
-   wire 	 f_stall_req;
    
 
    wire 	 d2x_valid;
@@ -110,6 +136,39 @@ module rv_cpu
       .x_bra_i(x2f_bra)
       );
 
+   wire [35:0] 	 CONTROL;
+   wire [31:0] 	 TRIG0, TRIG1, TRIG2, TRIG3;
+   wire 	 x_load_comb;
+   wire 	 x2w_load_hazard;
+   
+
+   wire 	 w_stall_req;
+   wire 	 x_stall_req;
+   
+  chipscope_icon icon0(
+		       .CONTROL0( CONTROL) );
+
+      chipscope_ila ila0(
+		      .CONTROL(CONTROL),
+		      .CLK(clk_i),
+		      .TRIG0(TRIG0),
+		      .TRIG1(TRIG1),
+		      .TRIG2(TRIG2),
+		      .TRIG3(TRIG3) );
+
+   assign TRIG0 = f2d_pc;
+   assign TRIG1 = f2d_ir;
+   assign TRIG2[0] = rst_i;
+   assign TRIG2[1] = f2d_valid;
+   assign TRIG2[2] = f_kill;
+   assign TRIG2[3] = f_stall;
+   assign TRIG2[4] = w_stall_req;
+   assign TRIG2[5] = x_stall_req;
+   
+   
+   
+
+   
    
    rv_decode decode
      (
@@ -204,11 +263,6 @@ module rv_cpu
       );
 
    
-   wire 	 x_load_comb;
-   wire 	 x2w_load_hazard;
-   
-
-   wire 	 w_stall_req;
 
  
    
@@ -279,6 +333,7 @@ module rv_cpu
 
    );
 
+   wire [31:0] 	 wb_trig2;
    
 
    rv_writeback writeback
@@ -306,9 +361,27 @@ module rv_cpu
       
       .rf_rd_value_o(rf_rd_value),
       .rf_rd_o(rf_rd),
-      .rf_rd_write_o(rf_rd_write)
+      .rf_rd_write_o(rf_rd_write),
+      .TRIG2(wb_trig2)
    );
 
+   assign TRIG2[15:6] = wb_trig2[15:6];
+
+   assign TRIG3 = dm_addr_o;
+ 
+   reg [5:0] 	 stall_timeout;
+
+
+   always@(posedge clk_i)
+       if(!w_stall_req)
+	 stall_timeout <= 0;
+       else if(stall_timeout != 63)
+	 stall_timeout <= stall_timeout + 1;
+	 
+
+   
+   assign TRIG2[16] = (stall_timeout == 63) ? 1'b1 : 1'b0;
+   
    
    rv_timer ctimer (
 		    .clk_i(clk_i),

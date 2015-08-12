@@ -379,9 +379,14 @@ module rv_exec
    wire is_load = (d_opcode_i == `OPC_LOAD ? 1: 0) && d_valid_i && !x_kill_i;
    wire is_store = (d_opcode_i == `OPC_STORE ? 1: 0) && d_valid_i && !x_kill_i;
 
-   assign dm_load_o =  is_load;
-   assign dm_store_o = is_store;
+   assign dm_load_o =  is_load && !x_stall_i;
+   assign dm_store_o = is_store && !x_stall_i;
 
+
+   wire trig_ent = (d_pc_i == 'h264 && !x_kill_i);
+   wire trig_ret = (d_pc_i == 'h2bc && !x_kill_i);
+   wire trig_wr =  (dm_addr == 'hf368 && is_store && !x_stall_i);
+   
    
    always@(posedge clk_i) 
       if (rst_i) begin

@@ -13,7 +13,6 @@ SECTIONS
 
  .boot : { *(.boot) }
 
-  . = 0x0000f800;
   _ftext = .;
   PROVIDE( eprol = . );
 
@@ -134,8 +133,6 @@ SECTIONS
   PROVIDE( end = . );
   _end = ALIGN(8);
 
-  PROVIDE( _fstack = 0xfffc - 0x200 );
+  PROVIDE( _fstack = 0xfffc - 0x400 );
   PROVIDE( _fexception_stack = 0xfffc );
-
-
 }

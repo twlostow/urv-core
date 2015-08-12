@@ -3,18 +3,29 @@
  .global _start
 _start:
 
-	
-	la      x1, 1234
-	j lab2
-	sll x1, x1, 1
+
+    la a5, lab1
+    lw a5, 0(a5)
+    lw a5, 0(a5)
+    lw a5, 0(a5)
+
 	nop
-	addi x1,x1,1
+	nop
+	nop
+
+    forever:
+	j forever    
+
+
+lab1:
+	.word lab2
+
 lab2:
+	.word lab3
 
+lab3:
+	.word 0xdeadbeef
 
-	nop
-	nop
-	nop
 
 /*	sw x5,-16(x1)
 
@@ -51,22 +62,3 @@ pass1:
 	sw t0,-8(sp)
 	
 */
-	nop
-	nop
-forever:
-	j forever
-/*
-# clear the bss segment
-#	la	t0, _fbss
-#	la	t1, _end
-#1:
-##ifdef __riscv64
-#	sd	zero,0(t0)
-#	addi	t0, t0, 8
-#else
-#	sw	zero,0(t0)
-#	addi	t0, t0, 4
-#endif
-#	bltu	t0, t1, 1b
-
-#        call    main*/

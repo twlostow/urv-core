@@ -121,8 +121,12 @@ module rv_writeback
 	  pending_store <= 0;
 	
      end
+
+    reg interlock_d = 0;
+   wire interlock = 0 ;
    
 
+/* -----\/----- EXCLUDED -----\/-----
    reg interlock_d ;
    wire interlock = ( ( x_load_i || pending_load ) && dm_load_done_i && (x_load_hazard_i || pending_load_hazard ) );
 
@@ -135,6 +139,7 @@ module rv_writeback
 	else
 	  interlock_d <= interlock;
      end
+ -----/\----- EXCLUDED -----/\----- */
    
 
    assign rf_rd_value_o = (x_load_i || pending_load ? load_value : x_rd_value_i );

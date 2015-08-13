@@ -142,8 +142,8 @@ module rv_regfile
 		    .we2_i (write)
 		    );
    
-   wire 	  rs1_bypass = w_bypass_rd_write_i && (w_rd_i == d_rs1_i);
-   wire 	  rs2_bypass = w_bypass_rd_write_i && (w_rd_i == d_rs2_i);
+   wire 	  rs1_bypass = w_bypass_rd_write_i && (w_rd_i == d_rs1_i) && (w_rd_i != 0);
+   wire 	  rs2_bypass = w_bypass_rd_write_i && (w_rd_i == d_rs2_i) && (w_rd_i != 0);
    
    assign x_rs1_value_o = rs1_bypass ? w_bypass_rd_value_i : rs1_regfile;
    assign x_rs2_value_o = rs2_bypass ? w_bypass_rd_value_i : rs2_regfile;

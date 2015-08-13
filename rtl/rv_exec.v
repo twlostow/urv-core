@@ -317,6 +317,26 @@ module rv_exec
 
      end
 
+   reg unaligned_addr;
+   
+   always@*
+	case (d_fun_i)
+	  `LDST_B,
+	  `LDST_BU: 
+	    unaligned_addr <= 0;
+	  
+	  `LDST_H,
+	    `LDST_HU:
+	    unaligned_addr <= (dm_addr[0]);
+	  
+	  `LDST_L:
+	    unaligned_addr <= (dm_addr[1:0] != 2'b00);
+	  default:
+	    unaligned_addr <= 0;
+	  
+	endcase // case (d_fun_i)
+     
+   
    // generate store value/select
    always@*
      begin
@@ -413,6 +433,14 @@ module rv_exec
 	 w_fun_o <= d_fun_i;
 	 w_load_o <= is_load && !exception;
 	 w_store_o <= is_store && !exception;
+
+	 if ( (is_load || is_store) && !exception && unaligned_addr)
+	   begin
+	      $error("Unaligned address!");
+	      $stop;
+	      
+	   end
+	 
 	 
 	 w_dm_addr_o <= dm_addr;
 	 

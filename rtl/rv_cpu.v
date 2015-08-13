@@ -164,8 +164,8 @@ module rv_cpu
    assign TRIG2[3] = f_stall;
    assign TRIG2[4] = w_stall_req;
    assign TRIG2[5] = x_stall_req;
-   
-   
+
+   wire 	 d_stall_req;
    
 
    
@@ -178,6 +178,8 @@ module rv_cpu
       .d_stall_i(d_stall),
       .d_kill_i(d_kill),
 
+      .d_stall_req_o(d_stall_req),
+      
       .f_ir_i(f2d_ir),
       .f_pc_i(f2d_pc),
       .f_valid_i(f2d_valid),
@@ -422,7 +424,7 @@ module rv_cpu
  -----/\----- EXCLUDED -----/\----- */
 
       
-   assign f_stall =  x_stall_req || w_stall_req;
+   assign f_stall =  x_stall_req || w_stall_req || d_stall_req;
 // || (interlock_load && !interlock_load_d0);
    assign x_stall =  x_stall_req || w_stall_req;
 // || (interlock_load && !interlock_load_d0);

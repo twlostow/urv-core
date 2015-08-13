@@ -25,15 +25,18 @@
 module rv_regmem 
 (
  
- input 		   clk_i,
- input 		   rst_i,
+ input 	       clk_i,
+ input 	       rst_i,
 
- input [4:0] 	   a1_i,
- output  [31:0] q1_o,
+ input 	       en1_i,
+ input 	       en2_i,
+ 
+ input [4:0]   a1_i,
+ output [31:0] q1_o,
 
- input [4:0] 	   a2_i,
- input [31:0] 	   d2_i,
- input 		   we2_i
+ input [4:0]   a2_i,
+ input [31:0]  d2_i,
+ input 	       we2_i
  );
 
    reg [31:0] ram [0:31];

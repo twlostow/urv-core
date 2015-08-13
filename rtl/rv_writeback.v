@@ -41,13 +41,17 @@ module rv_writeback
    input [31:0]  x_rd_value_i,
    input 	 x_rd_write_i,
 
+   input [31:0]  x_shifter_rd_value_i,
+   input [31:0]  x_multiply_rd_value_i,
+   input [1:0] 	 x_rd_source_i,
+   
    input [31:0]  dm_data_l_i,
    input 	 dm_load_done_i,
    input 	 dm_store_done_i,
    
-   output [31:0] rf_rd_value_o,
+   output reg [31:0] rf_rd_value_o,
    output [4:0]  rf_rd_o,
-   output 	 rf_rd_write_o,
+   output reg	 rf_rd_write_o,
 
    output [31:0] TRIG2
    );
@@ -99,20 +103,17 @@ module rv_writeback
      end // always@ *
 
    
-   reg pending_load, pending_store, pending_load_hazard ;
+   reg pending_load, pending_store;
 
    always@(posedge clk_i)
      if(rst_i) begin
 	pending_load <= 0;
 	pending_store <= 0;
-	pending_load_hazard <= 0;
-     end else      begin
+     end else begin
 	if(x_load_i && !dm_load_done_i) begin
 	   pending_load <= 1;
-	   pending_load_hazard <= x_load_hazard_i;
 	end else if (dm_load_done_i) begin
 	   pending_load <= 0;
-	   pending_load_hazard <= 0;
 	end
 	  
 	if(x_store_i && !dm_store_done_i)
@@ -121,32 +122,34 @@ module rv_writeback
 	  pending_store <= 0;
 	
      end
-
-    reg interlock_d = 0;
-   wire interlock = 0 ;
    
 
-/* -----\/----- EXCLUDED -----\/-----
-   reg interlock_d ;
-   wire interlock = ( ( x_load_i || pending_load ) && dm_load_done_i && (x_load_hazard_i || pending_load_hazard ) );
 
-   always@(posedge clk_i)
-     if (rst_i) begin
-	interlock_d <= 0;
-     end else  begin
-	if(interlock_d)
-	  interlock_d <= 0;
-	else
-	  interlock_d <= interlock;
-     end
- -----/\----- EXCLUDED -----/\----- */
+   always@*
+     if( x_load_i || pending_load )
+       rf_rd_value_o <= load_value;
+     else if ( x_rd_source_i == `RD_SOURCE_SHIFTER )
+       rf_rd_value_o <= x_shifter_rd_value_i;
+     else if ( x_rd_source_i == `RD_SOURCE_MULTIPLY )
+       rf_rd_value_o <= x_multiply_rd_value_i;
+     else
+       rf_rd_value_o <= x_rd_value_i;
+
+
+   always@*
+     if (w_stall_i)
+       rf_rd_write_o <= 0;
+     else if ( (x_load_i || pending_load) && dm_load_done_i)
+       rf_rd_write_o <= 1;
+     else
+       rf_rd_write_o <= x_rd_write_i;
    
-
-   assign rf_rd_value_o = (x_load_i || pending_load ? load_value : x_rd_value_i );
+   
+   
+//   assign rf_rd_value_o = (x_load_i || pending_load ? load_value : x_rd_value_i );
    assign rf_rd_o = (x_rd_i);
-   assign rf_rd_write_o = !interlock_d && (w_stall_i ? 1'b0 : ((x_load_i || pending_load) && dm_load_done_i ? 1'b1 : x_rd_write_i ));
       
-   assign w_stall_req_o = ((x_load_i || pending_load) && !dm_load_done_i) || ((x_store_i || pending_store) && !dm_store_done_i) || (interlock && !interlock_d);
+   assign w_stall_req_o = ((x_load_i || pending_load) && !dm_load_done_i) || ((x_store_i || pending_store) && !dm_store_done_i);
 
 
    assign TRIG2[6] = x_load_i;
@@ -155,9 +158,6 @@ module rv_writeback
    assign TRIG2[9] = x_store_i;
    assign TRIG2[10] = pending_store;
    assign TRIG2[11] = dm_store_done_i;
-   assign TRIG2[12] = interlock;
-   assign TRIG2[13] = interlock_d;
-   assign TRIG2[14] = pending_load_hazard;
    assign TRIG2[15] = w_stall_req_o;
 
 endmodule // rv_writeback

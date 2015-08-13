@@ -145,6 +145,7 @@ module rv_cpu
    wire 	 w_stall_req;
    wire 	 x_stall_req;
    
+/* -----\/----- EXCLUDED -----\/-----
   chipscope_icon icon0(
 		       .CONTROL0( CONTROL) );
 
@@ -155,6 +156,7 @@ module rv_cpu
 		      .TRIG1(TRIG1),
 		      .TRIG2(TRIG2),
 		      .TRIG3(TRIG3) );
+ -----/\----- EXCLUDED -----/\----- */
 
    assign TRIG0 = f2d_pc;
    assign TRIG1 = f2d_ir;
@@ -221,12 +223,15 @@ module rv_cpu
 
       wire [4:0] 	 x2w_rd;
    wire [31:0] 	 x2w_rd_value;
+   wire [31:0] 	 x2w_rd_shifter;
+   wire [31:0] 	 x2w_rd_multiply;
    wire [31:0] 	 x2w_dm_addr;
    wire 	 x2w_rd_write;
    wire [2:0] 	 x2w_fun;
    wire 	 x2w_store;
    wire 	 x2w_load;
-      
+   wire [1:0] 	 x2w_rd_source;
+   
 
    wire [31:0] 	 x_rs2_value, x_rs1_value;
    
@@ -321,6 +326,9 @@ module rv_cpu
       .w_rd_o(x2w_rd),
       .w_rd_value_o(x2w_rd_value),
       .w_rd_write_o(x2w_rd_write),
+      .w_rd_source_o ( x2w_rd_source),
+      .w_rd_shifter_o ( x2w_rd_shifter),
+      .w_rd_multiply_o ( x2w_rd_multiply),
 
       .dm_addr_o(dm_addr_o),
       .dm_data_s_o(dm_data_s_o),
@@ -352,8 +360,11 @@ module rv_cpu
       .x_store_i(x2w_store),
       
       .x_rd_i(x2w_rd),
+      .x_rd_source_i(x2w_rd_source),
       .x_rd_value_i(x2w_rd_value),
       .x_rd_write_i(x2w_rd_write),
+      .x_shifter_rd_value_i ( x2w_rd_shifter),
+      .x_multiply_rd_value_i ( x2w_rd_multiply),
       .x_dm_addr_i(x2w_dm_addr),
       
       .dm_data_l_i(dm_data_l_i),
@@ -380,7 +391,6 @@ module rv_cpu
        else if(stall_timeout != 63)
 	 stall_timeout <= stall_timeout + 1;
 	 
-
    
    assign TRIG2[16] = (stall_timeout == 63) ? 1'b1 : 1'b0;
    
@@ -406,43 +416,16 @@ module rv_cpu
 	x2f_bra_d1 <= x2f_bra_d0;
      end
    
-     
-// load to Rd in W stage while Rs1/Rs2==RD in fetch stage: assert interlock
-
-   
-/* -----\/----- EXCLUDED -----\/-----
-   reg 		 interlock_load, interlock_load_d0 = 0;
-   
-   always@*
-     interlock_load <= d_load_hazard && x_load_comb;
-
-   always@(posedge clk_i)
-     if(interlock_load_d0)
-       interlock_load_d0 <= 0;
-     else
-       interlock_load_d0 <= interlock_load;   
- -----/\----- EXCLUDED -----/\----- */
-
       
    assign f_stall =  x_stall_req || w_stall_req || d_stall_req;
-// || (interlock_load && !interlock_load_d0);
    assign x_stall =  x_stall_req || w_stall_req;
-// || (interlock_load && !interlock_load_d0);
    assign d_stall =  x_stall_req || w_stall_req;
-// || (interlock_load && !interlock_load_d0);
    assign w_stall =  0;
 
    assign x_kill = x2f_bra || x2f_bra_d0 || x2f_bra_d1;
    assign d_kill = x2f_bra || x2f_bra_d0;
    assign f_kill = x2f_bra ;
-
    
-   
-
-   
-//&& ~x_bra_d0;
-   
-      
 endmodule // rv_cpu
 
    

@@ -159,7 +159,7 @@ module main;
 
    initial begin
 //      load_ram("../../sw/uart_bootloader/uart-bootloader.ram");
-      load_ram("../../sw/test2/test2.ram");
+      load_ram("../../sw/hello/hello.ram");
       repeat(3) @(posedge clk);
       rst = 0;
    end
@@ -311,7 +311,7 @@ module main;
 	
 	if(dm_write)begin
 	  $display("DM Write addr %x data %x", dm_addr, dm_data_s);
-	  $fwrite(f_exec_log,"DM Write addr %x data %x\n", dm_addr, dm_data_s);
+//	  $fwrite(f_exec_log,"DM Write addr %x data %x\n", dm_addr, dm_data_s);
 	end
 	     
 	if (DUT.writeback.x_load_i && DUT.writeback.rf_rd_write_o)
@@ -326,7 +326,9 @@ module main;
 	     
 
      $display("DM Load addr %x data %x -> %s", dm_addr_d0, DUT.writeback.rf_rd_value_o, decode_regname(DUT.writeback.x_rd_i));
+/* -----\/----- EXCLUDED -----\/-----
 	    $fwrite(f_exec_log, "DM Load addr %x data %x -> %s\n", dm_addr_d0, DUT.writeback.rf_rd_value_o, decode_regname(DUT.writeback.x_rd_i));
+ -----/\----- EXCLUDED -----/\----- */
 	  end
 	end
      end
@@ -338,18 +340,19 @@ module main;
      if(dm_write && dm_addr == 'h100000)
        begin
 	  $display("\n ****** TX '%c' \n", dm_data_s[7:0]) ;
-	  $fwrite(f_exec_log,"\n ****** TX '%c' \n", dm_data_s[7:0]) ;
+//	  $fwrite(f_exec_log,"\n ****** TX '%c' \n", dm_data_s[7:0]) ;
 	  $fwrite(f_console,"%c", dm_data_s[7:0]);
 	  $fflush(f_console);
 	  
        end
    
+   int cycles = 0;
    
 
    
    always@(posedge clk)
    
-     if(dump_insns && DUT.execute.d_valid_i && !DUT.execute.x_stall_i && !DUT.execute.x_kill_i)
+     if(dump_insns && DUT.execute.d_valid_i && !DUT.execute.x_stall_i && !DUT.execute.x_kill_i && !DUT.decode.load_hazard_d)
        begin
 	  automatic string opc="<unk>", fun="", args="";
 
@@ -463,9 +466,9 @@ module main;
 
 	  endcase // case (d2x_opcode)
 
-	  $display("%08x: %-8s %-3s %s", DUT.execute.d_pc_i, opc, fun, args);
-  	  $fwrite(f_exec_log,"%08x: %-8s %-3s %s\n", DUT.execute.d_pc_i, opc, fun, args);
-	  $fwrite(f_exec_log,": PC %08x OP %08x", DUT.execute.d_pc_i, DUT.decode.x_ir);
+	  $display("%08x [%d]: %-8s %-3s %s", DUT.execute.d_pc_i, cycles, opc, fun, args);
+//  	  $fwrite(f_exec_log,"%08x: %-8s %-3s %s\n", DUT.execute.d_pc_i, opc, fun, args);
+	  $fwrite(f_exec_log,": PC %08x OP %08x CYCLES %-0d RS1 %08x RS2 %08x\n", DUT.execute.d_pc_i, DUT.decode.x_ir, cycles++, DUT.execute.rs1, DUT.execute.rs2);
 	  
 
 	  

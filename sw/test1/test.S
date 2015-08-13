@@ -6,25 +6,37 @@ _start:
 
     la a5, lab1
     lw a5, 0(a5)
-    lw a5, 0(a5)
-    lw a5, 0(a5)
-
-	nop
-	nop
-	nop
+    jr a5
 
     forever:
 	j forever    
 
 
 lab1:
-	.word lab2
+    .word continue
 
-lab2:
-	.word lab3
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
 
-lab3:
-	.word 0xdeadbeef
+
+continue:
+
+    nop
+    j continue
 
 
 /*	sw x5,-16(x1)

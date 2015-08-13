@@ -61,7 +61,7 @@ module rv_decode
  output reg 	   x_is_signed_compare_o,
  output reg 	   x_is_signed_alu_op_o,
  output reg 	   x_is_add_o,
- output reg 	   x_is_shift_o,
+ output 	   x_is_shift_o,
  output reg [2:0]  x_rd_source_o,
  output reg 	   x_rd_write_o,
 
@@ -81,6 +81,8 @@ module rv_decode
    reg [4:0] x_rd;
    reg [4:0] x_opcode;
    reg 	     x_valid;
+   reg 	     x_is_shift;
+   
    
    assign x_rs1_o = x_rs1;
    assign x_rs2_o = x_rs2;
@@ -116,15 +118,30 @@ module rv_decode
    
    wire [4:0] d_opcode = f_ir_i[6:2];
    
-/* -----\/----- EXCLUDED -----\/-----
-   always@(posedge clk_i)
-     if(!d_stall_i)
-       x_load_hazard_o <= ( (f_rs1 == x_rd)  || (f_rs2 == x_rd) ) && (!d_kill_i) && (x_opcode == `OPC_LOAD);
- -----/\----- EXCLUDED -----/\----- */
+   reg 	      load_hazard;
 
+      // attempt to reuse ALU for jump address generation
+   wire [2:0] d_fun = f_ir_i[14:12];
 
-   wire load_hazard = x_valid && f_valid_i && ( (f_rs1 == x_rd)  || (f_rs2 == x_rd) ) && (!d_kill_i) && (x_opcode == `OPC_LOAD);
+   wire d_is_shift = (d_fun == `FUNC_SL || d_fun == `FUNC_SR) &&
+	(d_opcode == `OPC_OP || d_opcode == `OPC_OP_IMM );
 
+   always@*
+     if (x_valid && f_valid_i && ( (f_rs1 == x_rd)  || (f_rs2 == x_rd) ) && (!d_kill_i) )
+       begin
+	  case (x_opcode)
+	    `OPC_LOAD:
+	      load_hazard <= 1;
+	    `OPC_OP,
+	    `OPC_OP_IMM:
+	      load_hazard <= x_is_shift;
+	    default:
+	      load_hazard <= 0;
+	  endcase // case (x_opcode)
+       end else
+	 load_hazard <= 0;
+   
+//wire load_hazard = x_valid && f_valid_i && ( (f_rs1 == x_rd)  || (f_rs2 == x_rd) ) && (!d_kill_i) && (x_opcode == `OPC_LOAD);
 
    reg 	inserting_nop = 0;
 
@@ -133,12 +150,11 @@ module rv_decode
        inserting_nop <= 0;
      else if (!d_stall_i)
        begin
-       if (inserting_nop)
-	 inserting_nop <= 0;
-       else
-	 inserting_nop <= load_hazard;
-     end
-   
+	  if (inserting_nop)
+	    inserting_nop <= 0;
+	  else
+	    inserting_nop <= load_hazard;
+       end
 
    assign d_stall_req_o = load_hazard && !inserting_nop;
 
@@ -155,8 +171,6 @@ module rv_decode
 	  x_shamt_o <= f_ir_i[24:20];
        end
    
-   // attempt to reuse ALU for jump address generation
-   wire [2:0] d_fun = f_ir_i[14:12];
 
    always@(posedge clk_i)
      if(!d_stall_i)
@@ -199,14 +213,12 @@ module rv_decode
 	  endcase // case (opcode)
      end // always@ (posedge clk_i)
 
-   wire d_is_shift = (d_fun == `FUNC_SL || d_fun == `FUNC_SR) &&
-			    (d_opcode == `OPC_OP || d_opcode == `OPC_OP_IMM );
 
    // misc decoding
    always@(posedge clk_i)
      if(!d_stall_i)
        begin
-	  x_is_shift_o <= d_is_shift;
+	  x_is_shift <= d_is_shift;
 	  
 	  x_is_signed_compare_o <= ( ( d_opcode == `OPC_BRANCH) && ( ( d_fun == `BRA_GE )|| (d_fun == `BRA_LT ) ) )
 	    || ( ( (d_opcode == `OPC_OP) || (d_opcode == `OPC_OP_IMM) ) && (d_fun == `FUNC_SLT ) );
@@ -225,6 +237,8 @@ module rv_decode
 	    x_rd_source_o <= `RD_SOURCE_SHIFTER;
 	  else if (d_opcode == `OPC_SYSTEM)
 	    x_rd_source_o <= `RD_SOURCE_CSR;
+	  else if (d_opcode == `OPC_OP && !d_fun[2] && f_ir_i[25])
+	    x_rd_source_o <= `RD_SOURCE_MULTIPLY;
 	  else
 	    x_rd_source_o <= `RD_SOURCE_ALU;
 
@@ -256,7 +270,7 @@ module rv_decode
 	     
 	  end
    
-   
+   assign x_is_shift_o = x_is_shift;
    
 
 

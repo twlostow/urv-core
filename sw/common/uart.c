@@ -46,13 +46,25 @@ void uart_init_hw()
 
 }
 
+volatile int *TX_REG = 0x100000;
+
+
+void putc(char c)
+{
+    *TX_REG = c;
+}
+
 void uart_write_byte(int b)
 {
+#ifdef SIM
+    putc(b);
+#else
 	if (b == '\n')
 		uart_write_byte('\r');
 	while (uart->SR & UART_SR_TX_BUSY)
 		;
 	uart->TDR = b;
+#endif
 }
 
 int uart_poll()

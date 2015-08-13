@@ -7,13 +7,13 @@ OBJDUMP =	$(CROSS_COMPILE)objdump
 OBJCOPY =	$(CROSS_COMPILE)objcopy
 SIZE =		$(CROSS_COMPILE)size
 
-CFLAGS = -g -m32 -msoft-float -march=RV32I  -I. -I../common
+CFLAGS = -g -O2 -m32 -msoft-float -march=RV32I  -I. -I../common -DSIM
 OBJS = ../common/crtuser.o main.o ../common/uart.o ../common/printf.o ../common/vsprintf-xint.o
 LDS = ../common/ram2.ld
 OUTPUT=hello
 
 $(OUTPUT): $(LDS) $(OBJS)
-	${CC} -g -m32 -msoft-float  -march=RV32I -o $(OUTPUT).elf -nostartfiles $(OBJS)  -lm -L../coremark -lcoremark -T $(LDS)
+	${CC} -g -m32 -msoft-float  -march=RV32I -o $(OUTPUT).elf -nostartfiles $(OBJS)  -lm -L../coremark_v1.0 -lcoremark -T $(LDS)
 	${OBJCOPY} -O binary $(OUTPUT).elf $(OUTPUT).bin
 	${OBJDUMP} -D $(OUTPUT).elf > disasm.S
 	../genraminit $(OUTPUT).bin 16384 > $(OUTPUT).ram

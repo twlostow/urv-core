@@ -47,33 +47,40 @@ module rv_fetch
    reg 	      rst_d;
 
    reg [31:0]  pc_next;
-
+   reg [31:0]  pc_plus_4;
+   
+   
    always@*
      if( x_bra_i )
        pc_next <= x_pc_bra_i;
      else if (!rst_d || f_stall_i || !im_valid_i)
        pc_next <= pc;
      else
-       pc_next <= pc + 4;
-   
+       pc_next <= pc_plus_4;
    
    assign f_ir_o = ir;
    assign im_addr_o = pc_next;
+       
    
- 
    always@(posedge clk_i)
      if (rst_i) begin
 	pc <= 0;
+	pc_plus_4 <= 4;
+	
 	ir <= 0;
 	f_valid_o <= 0;
 	rst_d <= 0;
 	
      end else begin
 	rst_d <= 1;
-
+	
 	if (!f_stall_i) begin
-	      
+
+	   if(im_valid_i)
+	     pc_plus_4 <= (x_bra_i ? x_pc_bra_i : pc_plus_4) + 4;
+	   
 	   pc <= pc_next;
+
 	   f_pc_o <= pc;
 
 	   if(im_valid_i) begin

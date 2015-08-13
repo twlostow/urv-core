@@ -45,16 +45,27 @@ uint32_t sys_get_ticks()
     return read_csr(0xc01);
 }
 
-extern void coremark_main();
+extern void coremark_main(int argc, char *argv[]);
+
 main()
 {
     uart_init_hw();
+    int argc = 1;
+    char *argv[] = {"coremark"};
 
-    pp_printf("Hello, world [%d]!\n\r", sys_get_ticks());
+    int i;
 
-    coremark_main();
+    for(i=0;i<100;i++)
+    {
+	float f = 2*3.14*(float)i / 100.0;
+	int y = (int) (1000.0 *sin(f));
+	pp_printf("%d %d\n", i, y);
+    }
 
-//    for(;;);
+//    coremark_main(argc, argv);
+
+
+    for(;;);
 
     enable_irqs();
 

@@ -78,6 +78,10 @@ module rv_exec
    output reg [31:0] w_rd_value_o,
    output reg 	     w_rd_write_o,
    output reg [31:0] w_dm_addr_o,
+   output reg [1:0]  w_rd_source_o,
+   output [31:0]     w_rd_shifter_o,
+   output [31:0]     w_rd_multiply_o,
+   
    
    // Data memory I/F (address/store)
    output [31:0]     dm_addr_o,
@@ -120,7 +124,7 @@ module rv_exec
 
    reg 	       f_branch_take;
    
-   wire        x_stall_req_shifter;
+   wire        x_stall_req_shifter = 0;
    wire        x_stall_req_multiply = 0;
    wire        x_stall_req_divide   = 0;
 
@@ -288,7 +292,6 @@ module rv_exec
       .rst_i(rst_i),
 
       .x_stall_i(x_stall_i),
-      .w_stall_req_i(w_stall_req_i),
       .d_valid_i(d_valid_i),
       .d_rs1_i(rs1),
       .d_shamt_i(alu_op2[4:0]),
@@ -296,15 +299,24 @@ module rv_exec
       .d_shifter_sign_i(d_shifter_sign_i),
       .d_is_shift_i(d_is_shift_i),
 
-      .x_stall_req_o(x_stall_req_shifter),
-      .x_rd_o(rd_shifter)
+      .w_rd_o(w_rd_shifter_o)
       );
 
+  rv_multiply multiplier 
+    (
+     .clk_i(clk_i),
+     .rst_i(rst_i),
+     .x_stall_i(x_stall_i),
+   
+     .d_rs1_i(rs1),
+     .d_rs2_i(rs2),
+     .d_fun_i(d_fun),
+     .w_rd_o (w_rd_multiply_o)
+   );
 
    always@*
      case (d_rd_source_i)
        `RD_SOURCE_ALU: rd_value <= alu_result;
-       `RD_SOURCE_SHIFTER : rd_value <= rd_shifter;
        `RD_SOURCE_CSR: rd_value <= rd_csr;
        default: rd_value <= 32'hx;
      endcase // case (x_rd_source_i)
@@ -312,9 +324,7 @@ module rv_exec
    // generate load/store address
    always@*
      begin
-	dm_addr <=  rs1 + d_imm_i;
-	//[11:0]);
-
+	dm_addr <=  rs1 + { {20{d_imm_i[11]}}, d_imm_i[11:0] };
      end
 
    reg unaligned_addr;
@@ -418,6 +428,8 @@ module rv_exec
 	 w_load_o <= 0;
 	 w_store_o <= 0;
 	 w_dm_addr_o <= 0;
+	 w_rd_source_o <= 0;
+	 
 	 
 	 
       end else if (!x_stall_i) begin
@@ -429,7 +441,8 @@ module rv_exec
 //	 if(!shifter_stall_req)
 	 w_rd_value_o <= rd_value;
 	 w_rd_write_o <= d_rd_write_i && !x_kill_i && d_valid_i && !exception;
-
+	 w_rd_source_o <= d_rd_source_i;
+	 
 	 w_fun_o <= d_fun_i;
 	 w_load_o <= is_load && !exception;
 	 w_store_o <= is_store && !exception;

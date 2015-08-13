@@ -31,8 +31,7 @@
 #define BASE_UART 0x20000
 #define BASE_GPIO 0x21000
 
-//#define UART_BAUDRATE 115200
-#define UART_BAUDRATE 10000000
+#define UART_BAUDRATE 115200
 
 static inline void writel ( uint32_t reg, uint32_t val)
 {

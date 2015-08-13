@@ -34,14 +34,10 @@ module rv_shifter
    input 	 rst_i,
 
    input 	 x_stall_i,
-   input 	 w_stall_req_i,
 
-   output 	 x_stall_req_o,
-
-
-   input d_valid_i,
+   input 	 d_valid_i,
    input [31:0]  d_rs1_i,
-   output [31:0] x_rd_o,
+   output reg[31:0] w_rd_o,
    
    input [4:0] 	 d_shamt_i,
    input [2:0] 	 d_fun_i,
@@ -50,16 +46,6 @@ module rv_shifter
 
    wire 	 extend_sign = ((d_fun_i == `FUNC_SR) && d_shifter_sign_i) ? d_rs1_i[31] : 1'b0;
 
-   wire 	 shifter_req = !w_stall_req_i && d_valid_i && d_is_shift_i;
-   reg 		 shifter_req_d0;
-
-   always@(posedge clk_i)
-     if(shifter_req_d0 && !x_stall_i)
-       shifter_req_d0 <= 0;
-     else
-       shifter_req_d0 <= shifter_req;
-   
-   assign x_stall_req_o = shifter_req && !shifter_req_d0;
    
    reg [31:0] shift_pre, shift_16, shift_8, s1_out;
 
@@ -79,12 +65,23 @@ module rv_shifter
    
    // stage 1 pipe register
    always@(posedge clk_i)
+     if (!x_stall_i)
+       begin
+	  s2_extend_sign <= extend_sign;
+	  s2_shift <= d_shamt_i;
+	  s2_func <= d_fun_i;
+	  s1_out <= shift_8;
+       end
+   
+/* -----\/----- EXCLUDED -----\/-----
+   always@*
      begin
 	s2_extend_sign <= extend_sign;
 	s2_shift <= d_shamt_i;
 	s2_func <= d_fun_i;
 	s1_out <= shift_8;
      end
+ -----/\----- EXCLUDED -----/\----- */
 
    reg [31:0] shift_4, shift_2, shift_1, shift_post;
    
@@ -96,8 +93,15 @@ module rv_shifter
 	shift_1 <= s2_shift[0] ? { {1{s2_extend_sign}}, shift_2[31:1] } : shift_2;
 	shift_post <= (s2_func == `FUNC_SL) ? `reverse_bits(shift_1) : shift_1;
      end
-   
-   assign x_rd_o = shift_post;
+
+/* -----\/----- EXCLUDED -----\/-----
+   always@(posedge clk_i)
+     if(!x_stall_i)
+       w_rd_o <= shift_post;
+ -----/\----- EXCLUDED -----/\----- */
+
+   always@*
+     w_rd_o <= shift_post;
 
 endmodule // rv_shifter
 

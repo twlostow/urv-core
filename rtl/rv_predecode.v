@@ -39,7 +39,7 @@ module rv_decode
  input [31:0] 	   f_pc_i,
  input 		   f_valid_i,
 
- output  	   x_valid_o,
+ output 	   x_valid_o,
 
  output reg [31:0] x_pc_o,
   
@@ -62,8 +62,13 @@ module rv_decode
  output reg 	   x_is_signed_alu_op_o,
  output reg 	   x_is_add_o,
  output 	   x_is_shift_o,
+ output reg 	   x_is_load_o,
+ output reg 	   x_is_store_o,
+ output reg 	   x_is_undef_o,
+ 
+ 
  output reg [2:0]  x_rd_source_o,
- output reg 	   x_rd_write_o,
+ output 	   x_rd_write_o,
 
  output reg [11:0] x_csr_sel_o,
  output reg [4:0]  x_csr_imm_o,
@@ -75,13 +80,14 @@ module rv_decode
 
    wire [4:0] f_rs1 = f_ir_i[19:15];
    wire [4:0] f_rs2 = f_ir_i[24:20];
-
-   reg [4:0] x_rs1;
+	      
+   reg [4:0]  x_rs1;
    reg [4:0] x_rs2;
    reg [4:0] x_rd;
    reg [4:0] x_opcode;
    reg 	     x_valid;
    reg 	     x_is_shift;
+   reg 	     x_rd_write;
    
    
    assign x_rs1_o = x_rs1;
@@ -126,13 +132,19 @@ module rv_decode
    wire d_is_shift = (d_fun == `FUNC_SL || d_fun == `FUNC_SR) &&
 	(d_opcode == `OPC_OP || d_opcode == `OPC_OP_IMM );
 
+   reg 	x_is_mul;
+   
+   
+   wire d_is_mul = (f_ir_i[25] && d_fun == 3'b000);
+   
    always@*
      if (x_valid && f_valid_i && ( (f_rs1 == x_rd)  || (f_rs2 == x_rd) ) && (!d_kill_i) )
        begin
 	  case (x_opcode)
 	    `OPC_LOAD:
 	      load_hazard <= 1;
-	    `OPC_OP,
+	    `OPC_OP:
+	      load_hazard <= x_is_shift | x_is_mul;
 	    `OPC_OP_IMM:
 	      load_hazard <= x_is_shift;
 	    default:
@@ -141,8 +153,6 @@ module rv_decode
        end else
 	 load_hazard <= 0;
    
-//wire load_hazard = x_valid && f_valid_i && ( (f_rs1 == x_rd)  || (f_rs2 == x_rd) ) && (!d_kill_i) && (x_opcode == `OPC_LOAD);
-
    reg 	inserting_nop = 0;
 
    always@(posedge clk_i)
@@ -165,8 +175,8 @@ module rv_decode
        begin
 	  x_rs1 <= f_rs1;
 	  x_rs2 <= f_rs2;
-	  x_rd <= load_hazard ? 0 : f_ir_i [11:7];
-	  x_opcode <= load_hazard ? `OPC_OP : d_opcode;
+	  x_rd <= (load_hazard && !inserting_nop) ? 0 : f_ir_i [11:7];
+	  x_opcode <= (load_hazard && !inserting_nop) ? `OPC_OP : d_opcode;
 	  load_hazard_d <= load_hazard;
 	  x_shamt_o <= f_ir_i[24:20];
        end
@@ -219,11 +229,15 @@ module rv_decode
      if(!d_stall_i)
        begin
 	  x_is_shift <= d_is_shift;
+
+	  x_is_load_o <= ( d_opcode == `OPC_LOAD && !load_hazard) ? 1'b1 : 1'b0;
+	  x_is_store_o <= ( d_opcode == `OPC_STORE && !load_hazard) ? 1'b1 : 1'b0;
 	  
 	  x_is_signed_compare_o <= ( ( d_opcode == `OPC_BRANCH) && ( ( d_fun == `BRA_GE )|| (d_fun == `BRA_LT ) ) )
 	    || ( ( (d_opcode == `OPC_OP) || (d_opcode == `OPC_OP_IMM) ) && (d_fun == `FUNC_SLT ) );
 
-
+	  x_is_mul <= d_is_mul;
+	 
 	  
 	  
 	  x_is_add_o <= (d_opcode == `OPC_AUIPC) || (d_opcode == `OPC_JAL) ||
@@ -232,6 +246,8 @@ module rv_decode
 
 	  x_is_signed_alu_op_o <= (d_fun == `FUNC_SLT);
 
+	  // all multiply/divide instructions except MUL
+	  x_is_undef_o <= (d_opcode == `OPC_OP && f_ir_i[25] && d_fun != 3'b000);
 	  
 	  if(d_is_shift)
 	    x_rd_source_o <= `RD_SOURCE_SHIFTER;
@@ -247,11 +263,11 @@ module rv_decode
 	  // rdest write value
 	  case (d_opcode)
 	    `OPC_OP_IMM, `OPC_OP, `OPC_JAL, `OPC_JALR, `OPC_LUI, `OPC_AUIPC:
-	      x_rd_write_o <= 1;
+	      x_rd_write <= 1;
 	    `OPC_SYSTEM:
-	      x_rd_write_o <= (d_fun != 0); // CSR instructions write to RD
+	      x_rd_write <= (d_fun != 0); // CSR instructions write to RD
 	    default:
-	      x_rd_write_o <= 0;
+	      x_rd_write <= 0;
 	  endcase // case (d_opcode)
        end // if (!d_stall_i)
    
@@ -271,6 +287,7 @@ module rv_decode
 	  end
    
    assign x_is_shift_o = x_is_shift;
+   assign x_rd_write_o = x_rd_write;
    
 
 

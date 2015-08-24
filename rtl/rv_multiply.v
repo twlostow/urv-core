@@ -15,28 +15,30 @@ module rv_multiply
    output reg [31:0] w_rd_o
    );
 
-   wire 	 sign_a = ( d_fun_i == `FUNC_MUL || d_fun_i == `FUNC_MULHSU ) ? d_rs1_i[31] : 1'b0;
-   wire 	 sign_b = ( d_fun_i == `FUNC_MUL ) ? d_rs2_i[31] : 1'b0;
+   reg [31:0] 	     yl_xl, yl_xh, yh_xl;
+
+
+
+   wire[17:0] xl = d_rs1_i[17:0];
+   wire[13:0] xh = d_rs1_i[31:18];
+   wire[17:0] yl = d_rs2_i[17:0];
+   wire[13:0] yh = d_rs2_i[31:18];
    
-   wire [32:0] 	 a = { sign_a, d_rs1_i };
-   wire [32:0] 	 b = { sign_b, d_rs2_i };
-
-   reg [65:0] 	 stage0, stage1;
-
-   reg [2:0] 	 s2_fun;
-
+		 
    always@(posedge clk_i)
      if(!x_stall_i)
        begin
-	  stage0 <= $signed(a) * $signed(b);
-	  s2_fun <= d_fun_i;
+	  yh_xl <= $signed(yh) * $signed(xl);
+	  yl_xh <= $signed(yl) * $signed(xh);
+	  yl_xl <= $unsigned(yl) * $unsigned(xl);
        end
+   
+
+//       stage0 <= $signed(d_rs1_i) * $signed(d_rs2_i);
 
    always@*
-     if( s2_fun != `FUNC_MUL )
-       w_rd_o <= stage0[63:32];
-     else
-       w_rd_o <= stage0[31:0];
+     w_rd_o <= yl_xl + {yl_xh[13:0], 18'h0} + {yh_xl[13:0], 18'h0};
+ 
    
    
 endmodule // rv_multiply

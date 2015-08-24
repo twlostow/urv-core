@@ -16,7 +16,7 @@
  You should have received a copy of the GNU Lesser General Public
  License along with this library.
  
-*/
+ */
 
 `include "rv_defs.v"
 
@@ -29,14 +29,14 @@ module rv_exceptions
 
    input 	 x_stall_i,
    input 	 x_kill_i,
-   
+  
    input 	 d_is_csr_i,
    input 	 d_is_eret_i,
-   
+  
    input [2:0] 	 d_fun_i,
    input [4:0] 	 d_csr_imm_i,
    input [11:0]  d_csr_sel_i,
-   
+  
    input 	 exp_irq_i,
    input 	 exp_tick_i,
    input 	 exp_breakpoint_i,
@@ -45,38 +45,40 @@ module rv_exceptions
    input 	 exp_invalid_insn_i,
 
    input [31:0]  x_csr_write_value_i,
-   
+  
    output 	 x_exception_o,
    input [31:0]  x_exception_pc_i,
    output [31:0] x_exception_pc_o,
-	    
-
+   output [31:0] x_exception_vector_o,
+  
    output [31:0] csr_mstatus_o,
    output [31:0] csr_mip_o,
    output [31:0] csr_mie_o,
    output [31:0] csr_mepc_o,
    output [31:0] csr_mcause_o
 
-  );
+   );
 
    
 
-   reg [31:0] csr_mepc;
-   reg [31:0] csr_mie;
-   reg csr_ie;
+   reg [31:0] 	 csr_mepc;
+   reg [31:0] 	 csr_mie;
+   reg 		 csr_ie;
 
-   reg 	      exception;
-   reg [3:0]  cause;
+   reg [3:0] 	 csr_mcause;
+   
+   reg 		 exception;
+   reg [3:0] 	 cause;
 
-   reg [5:0]  except_vec_masked;
+   reg [5:0] 	 except_vec_masked;
 
-   assign csr_mcause_o = 0;
+   assign csr_mcause_o = {28'h0, csr_mcause};
    assign csr_mepc_o = csr_mepc;
    assign csr_mie_o = csr_mie;
    assign csr_mstatus_o[0] = csr_ie;
    assign csr_mstatus_o[31:1] = 0;
-  
-   reg [31:0] 	      csr_mip;
+   
+   reg [31:0] 	 csr_mip;
 
    always@*
      begin
@@ -92,7 +94,7 @@ module rv_exceptions
 
    assign csr_mip_o = csr_mip;
    
-  
+   
    
    always@(posedge clk_i)
      if (rst_i)
@@ -107,31 +109,45 @@ module rv_exceptions
 	   except_vec_masked[5] <= x_csr_write_value_i [`EXCEPT_IRQ];
 	end else begin
 	   if ( exp_invalid_insn_i )
-	     except_vec_masked[0] <= csr_mie[`EXCEPT_ILLEGAL_INSN];
+	     except_vec_masked[0] <= 1'b1;
 
 	   if ( exp_breakpoint_i )
-	     except_vec_masked[1] <= csr_mie[`EXCEPT_BREAKPOINT];
+	     except_vec_masked[1] <= 1'b1;
 
 	   if ( exp_unaligned_load_i )
-	     except_vec_masked[2] <= csr_mie[`EXCEPT_UNALIGNED_LOAD];
+	     except_vec_masked[2] <= 1'b1;
 
 	   if ( exp_unaligned_store_i )
-	     except_vec_masked[3] <= csr_mie[`EXCEPT_UNALIGNED_STORE];
+	     except_vec_masked[3] <= 1'b1;
 
 	   if ( exp_tick_i )
-	     except_vec_masked[4] <= csr_mie[`EXCEPT_TIMER];
+	     except_vec_masked[4] <= csr_mie[`EXCEPT_TIMER] & csr_ie;
 
 	   if( exp_irq_i )
-	     except_vec_masked[5] <= csr_mie[`EXCEPT_IRQ];
+	     except_vec_masked[5] <= csr_mie[`EXCEPT_IRQ] & csr_ie;
 	end // else: !if(!x_stall_i && !x_kill_i && d_is_csr_i && d_csr_sel_i == `CSR_ID_MIP)
      end // else: !if(rst_i)
-    
+   
    always@*
-     exception <= |except_vec_masked;
+     exception <= |except_vec_masked | exp_invalid_insn_i;
 
    reg exception_pending;
+
+   assign x_exception_vector_o = 'h8;
    
-   
+   always@*
+     if(exp_invalid_insn_i || except_vec_masked[0])
+       cause <= `EXCEPT_ILLEGAL_INSN;
+     else if (except_vec_masked[1])
+       cause <= `EXCEPT_BREAKPOINT;
+     else if (except_vec_masked[2])
+       cause <= `EXCEPT_UNALIGNED_LOAD;
+     else if (except_vec_masked[3])
+       cause <= `EXCEPT_UNALIGNED_STORE;
+     else if (except_vec_masked[4])
+       cause <= `EXCEPT_TIMER;
+     else
+       cause <= `EXCEPT_IRQ;
    
    always@(posedge clk_i)
      if(rst_i) 
@@ -145,9 +161,10 @@ module rv_exceptions
 	  if ( d_is_eret_i )
 	    exception_pending <= 0;
 
-          if ( !exception_pending && exception && csr_ie )
+          if ( !exception_pending && exception )
 	    begin
 	       csr_mepc <= x_exception_pc_i;
+	       csr_mcause <= cause;
 	       exception_pending <= 1;
 	    end 
 
@@ -159,10 +176,10 @@ module rv_exceptions
 		 csr_mepc <= x_csr_write_value_i;
 	       `CSR_ID_MIE:
 		 begin
-		    csr_mie[`EXCEPT_ILLEGAL_INSN] <= x_csr_write_value_i [`EXCEPT_ILLEGAL_INSN];
-		    csr_mie[`EXCEPT_BREAKPOINT] <= x_csr_write_value_i [`EXCEPT_BREAKPOINT];
-		    csr_mie[`EXCEPT_UNALIGNED_LOAD] <= x_csr_write_value_i [`EXCEPT_UNALIGNED_LOAD];
-		    csr_mie[`EXCEPT_UNALIGNED_STORE] <= x_csr_write_value_i [`EXCEPT_UNALIGNED_STORE];
+		    csr_mie[`EXCEPT_ILLEGAL_INSN] <= 1;
+		    csr_mie[`EXCEPT_BREAKPOINT] <= 1;
+		    csr_mie[`EXCEPT_UNALIGNED_LOAD] <= 1;
+		    csr_mie[`EXCEPT_UNALIGNED_STORE] <= 1;
 		    csr_mie[`EXCEPT_TIMER] <= x_csr_write_value_i [`EXCEPT_TIMER];
 		    csr_mie[`EXCEPT_IRQ] <= x_csr_write_value_i [`EXCEPT_IRQ];
 		 end
@@ -172,10 +189,10 @@ module rv_exceptions
        end // if (!x_stall_i && !x_kill_i)
    
 
-	  assign x_exception_pc_o = csr_mepc;
-	  assign x_exception_o = exception & csr_ie & !exception_pending;
-	  
-	  endmodule // rv_exceptions
-
-
+   assign x_exception_pc_o = csr_mepc;
+   assign x_exception_o = exception & !exception_pending;
    
+endmodule // rv_exceptions
+
+
+

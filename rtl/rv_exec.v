@@ -30,7 +30,6 @@ module rv_exec
    input 	     x_stall_i,
    input 	     x_kill_i,
    output reg 	     x_stall_req_o,
-   input 	     w_stall_req_i,
    
    
    input [31:0]      d_pc_i,
@@ -59,6 +58,12 @@ module rv_exec
    input 	     d_is_signed_alu_op_i,
    input 	     d_is_add_i,
    input 	     d_is_shift_i,
+   input 	     d_is_load_i,
+   input 	     d_is_store_i,
+   input 	     d_is_divide_i,
+   input 	     d_is_undef_i,
+   
+   
    input [2:0] 	     d_rd_source_i,
    input 	     d_rd_write_i,
    
@@ -73,7 +78,8 @@ module rv_exec
    output reg [2:0 ] w_fun_o,
    output reg 	     w_load_o,
    output reg 	     w_store_o,
-   
+
+   output reg 	     w_valid_o,
    output reg [4:0]  w_rd_o,
    output reg [31:0] w_rd_value_o,
    output reg 	     w_rd_write_o,
@@ -96,8 +102,6 @@ module rv_exec
    input 	     timer_tick_i
    
    );
-
-   parameter g_exception_vector = 'h40;
 
    wire [31:0] 	 rs1, rs2;
 
@@ -124,10 +128,6 @@ module rv_exec
 
    reg 	       f_branch_take;
    
-   wire        x_stall_req_shifter = 0;
-   wire        x_stall_req_multiply = 0;
-   wire        x_stall_req_divide   = 0;
-
    wire [31:0] rd_shifter;
    wire [31:0] rd_csr;
    wire [31:0] rd_mul;
@@ -136,7 +136,7 @@ module rv_exec
    wire        exception;
    wire [31:0] csr_mie, csr_mip, csr_mepc, csr_mstatus,csr_mcause;
    wire [31:0] csr_write_value;
-   wire [31:0] exception_address;
+   wire [31:0] exception_address, exception_vector;
    
    
    rv_csr csr_regs
@@ -165,7 +165,7 @@ module rv_exec
       .csr_mip_i(csr_mip),
       .csr_mie_i(csr_mie),
       .csr_mepc_i(csr_mepc),
-      .csr_mcause_i(csr_mmause)
+      .csr_mcause_i(csr_mcause)
       );
 
    rv_exceptions exception_unit 
@@ -188,12 +188,12 @@ module rv_exec
       .exp_breakpoint_i(1'b0),
       .exp_unaligned_load_i(1'b0),
       .exp_unaligned_store_i(1'b0),
-      .exp_invalid_insn_i(1'b0),
+      .exp_invalid_insn_i(d_is_undef_i && !x_stall_i && !x_kill_i && d_valid_i),
 
-      
       .x_exception_o(exception),
       .x_exception_pc_i(d_pc_i),
       .x_exception_pc_o(exception_address),
+      .x_exception_vector_o(exception_vector),
 
       .csr_mstatus_o(csr_mstatus),
       .csr_mip_o(csr_mip),
@@ -220,7 +220,7 @@ module rv_exec
      if(d_is_eret_i )
        branch_target <= exception_address;
      else if ( exception )
-       branch_target <= g_exception_vector;
+       branch_target <= exception_vector;
      else case (d_opcode_i)
 	    `OPC_JAL: branch_target <= d_pc_i + d_imm_i;
 	    `OPC_JALR: branch_target <= rs1 + d_imm_i;
@@ -300,7 +300,9 @@ module rv_exec
       .d_is_shift_i(d_is_shift_i),
 
       .w_rd_o(w_rd_shifter_o)
-      );
+     );
+
+      wire divider_stall_req = 0;
 
   rv_multiply multiplier 
     (
@@ -314,10 +316,35 @@ module rv_exec
      .w_rd_o (w_rd_multiply_o)
    );
 
+/*   wire divider_stall_req;
+   wire [31:0] rd_divide;
+   
+   rv_divide divider
+     (
+      .clk_i(clk_i),
+      .rst_i(rst_i),
+      .x_stall_i(x_stall_i),
+      .x_kill_i(x_kill_i),
+      .x_stall_req_o(divider_stall_req),
+
+      .d_valid_i(d_valid_i),
+      .d_is_divide_i(d_is_divide_i),
+   
+      .d_rs1_i(rs1),
+      .d_rs2_i(rs2),
+
+      .d_fun_i(d_fun_i),
+
+      .x_rd_o(rd_divide)
+   );
+
+ -----/\----- EXCLUDED -----/\----- */
+
    always@*
      case (d_rd_source_i)
        `RD_SOURCE_ALU: rd_value <= alu_result;
        `RD_SOURCE_CSR: rd_value <= rd_csr;
+//       `RD_SOURCE_DIVIDE: rd_value <= rd_divide;
        default: rd_value <= 32'hx;
      endcase // case (x_rd_source_i)
    
@@ -406,16 +433,19 @@ module rv_exec
    assign dm_data_s_o = dm_data_s;
    assign dm_data_select_o = dm_select_s;
 
+/* -----\/----- EXCLUDED -----\/-----
    wire is_load = (d_opcode_i == `OPC_LOAD ? 1: 0) && d_valid_i && !x_kill_i;
    wire is_store = (d_opcode_i == `OPC_STORE ? 1: 0) && d_valid_i && !x_kill_i;
+ -----/\----- EXCLUDED -----/\----- */
 
-   assign dm_load_o =  is_load && !x_stall_i;
-   assign dm_store_o = is_store && !x_stall_i;
+   assign dm_load_o =  d_is_load_i & d_valid_i & !x_kill_i & !x_stall_i & !exception;
+   assign dm_store_o = d_is_store_i & d_valid_i & !x_kill_i & !x_stall_i & !exception;
 
-
+/* -----\/----- EXCLUDED -----\/-----
    wire trig_ent = (d_pc_i == 'h264 && !x_kill_i);
    wire trig_ret = (d_pc_i == 'h2bc && !x_kill_i);
    wire trig_wr =  (dm_addr == 'hf368 && is_store && !x_stall_i);
+ -----/\----- EXCLUDED -----/\----- */
    
    
    always@(posedge clk_i) 
@@ -429,8 +459,7 @@ module rv_exec
 	 w_store_o <= 0;
 	 w_dm_addr_o <= 0;
 	 w_rd_source_o <= 0;
-	 
-	 
+	 w_valid_o <= 0;
 	 
       end else if (!x_stall_i) begin
 	 f_branch_target_o <= branch_target;
@@ -438,32 +467,30 @@ module rv_exec
 
 	 w_rd_o <= d_rd_i;
 	 
-//	 if(!shifter_stall_req)
 	 w_rd_value_o <= rd_value;
-	 w_rd_write_o <= d_rd_write_i && !x_kill_i && d_valid_i && !exception;
+	 w_rd_write_o <= d_rd_write_i && !x_kill_i && !exception;
 	 w_rd_source_o <= d_rd_source_i;
 	 
 	 w_fun_o <= d_fun_i;
-	 w_load_o <= is_load && !exception;
-	 w_store_o <= is_store && !exception;
+	 w_load_o <= d_is_load_i & d_valid_i && !x_kill_i && !exception;
+	 w_store_o <= d_is_store_i & d_valid_i && !x_kill_i && !exception;
+	 
 
-	 if ( (is_load || is_store) && !exception && unaligned_addr)
+/* -----\/----- EXCLUDED -----\/-----
+	 if ( (d_is_load_i || is_store) && !exception && unaligned_addr)
 	   begin
 	      $error("Unaligned address!");
 	      $stop;
 	      
 	   end
-	 
+ -----/\----- EXCLUDED -----/\----- */
 	 
 	 w_dm_addr_o <= dm_addr;
+	 w_valid_o <= d_valid_i && !x_kill_i && !exception; 
 	 
       end else begin // if (!x_stall_i)
-	// f_branch_take   <= 0;
-	 w_rd_write_o <= 0;
-	 w_load_o <= 0;
-	 w_store_o <= 0;
-  
-end // else: !if(rst_i)
+	 w_valid_o <= 0;
+      end // else: !if(rst_i)
 
    assign f_branch_take_o = f_branch_take;
    
@@ -471,9 +498,9 @@ end // else: !if(rst_i)
    always@*
      if(f_branch_take)
        x_stall_req_o <= 0;
-     else if (x_stall_req_shifter || x_stall_req_multiply || x_stall_req_divide)
+     else if(divider_stall_req)
        x_stall_req_o <= 1;
-     else if ((is_store || is_load) && !dm_ready_i)
+     else if ((d_is_load_i || d_is_store_i) && d_valid_i && !x_kill_i && !dm_ready_i)
        x_stall_req_o <= 1;
      else
        x_stall_req_o <= 0;

@@ -28,6 +28,7 @@
 `define OPC_LOAD 5'b00000
 `define OPC_STORE 5'b01000
 `define OPC_SYSTEM 5'b11100
+`define OPC_MULDIV 5'b
 
 `define BRA_EQ 3'b000
 `define BRA_NEQ  3'b001
@@ -55,6 +56,11 @@
 `define FUNC_MULH 3'b001
 `define FUNC_MULHSU 3'b010
 `define FUNC_MULHU 3'b011
+
+`define FUNC_DIV 3'b100
+`define FUNC_DIVU 3'b101
+`define FUNC_REM 3'b110
+`define FUNC_REMU 3'b111
 
 `define RD_SOURCE_ALU 3'b000 
 `define RD_SOURCE_SHIFTER 3'b010

@@ -100,6 +100,9 @@ module rv_cpu
    wire [4:0] 	 d2x_opcode;
    wire 	 d2x_shifter_sign;
 
+   wire 	 d2x_is_load, d2x_is_store, d2x_is_undef;
+   
+   
    wire [31:0] 	 d2x_imm;
    wire d2x_is_signed_compare;
    wire d2x_is_signed_alu_op;
@@ -210,6 +213,10 @@ module rv_cpu
       .x_is_signed_alu_op_o(d2x_is_signed_alu_op),
       .x_is_add_o(d2x_is_add),
       .x_is_shift_o(d2x_is_shift),
+      .x_is_load_o(d2x_is_load),
+      .x_is_store_o(d2x_is_store),
+      .x_is_undef_o(d2x_is_undef),
+      
       .x_rd_source_o(d2x_rd_source),
       .x_rd_write_o(d2x_rd_write),
 
@@ -240,9 +247,10 @@ module rv_cpu
    wire 	 rf_rd_write;
 
 
-
+   wire 	 x2w_valid;
+   
    wire [31:0] 	 rf_bypass_rd_value = x2w_rd_value;
-   wire  	 rf_bypass_rd_write = rf_rd_write && !x2w_load;
+   wire  	 rf_bypass_rd_write = rf_rd_write && !x2w_load; // multiply/shift too?
    
    rv_regfile regfile
      (
@@ -284,7 +292,6 @@ module rv_cpu
       .irq_i ( irq_i ),
       
       .x_stall_req_o(x_stall_req),
-      .w_stall_req_i(w_stall_req),
 
       .d_valid_i(d2x_valid),
 
@@ -302,6 +309,10 @@ module rv_cpu
       .d_is_signed_alu_op_i(d2x_is_signed_alu_op),
       .d_is_add_i(d2x_is_add),
       .d_is_shift_i(d2x_is_shift),
+      .d_is_load_i(d2x_is_load),
+      .d_is_store_i(d2x_is_store),
+      .d_is_undef_i(d2x_is_undef),
+      
       .d_rd_source_i(d2x_rd_source),
       .d_rd_write_i(d2x_rd_write),
 
@@ -321,7 +332,7 @@ module rv_cpu
       .w_fun_o(x2w_fun),
       .w_load_o(x2w_load),
       .w_store_o(x2w_store),
-   
+      .w_valid_o(x2w_valid),
       .w_dm_addr_o(x2w_dm_addr),
       .w_rd_o(x2w_rd),
       .w_rd_value_o(x2w_rd_value),
@@ -358,7 +369,8 @@ module rv_cpu
       .x_load_i(x2w_load),
       .x_load_hazard_i(x2w_load_hazard),
       .x_store_i(x2w_store),
-      
+
+      .x_valid_i(x2w_valid),
       .x_rd_i(x2w_rd),
       .x_rd_source_i(x2w_rd_source),
       .x_rd_value_i(x2w_rd_value),

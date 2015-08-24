@@ -45,6 +45,7 @@ add wave -noupdate -expand -group D /main/DUT/decode/x_is_add_o
 add wave -noupdate -expand -group D /main/DUT/decode/x_is_shift_o
 add wave -noupdate -expand -group D /main/DUT/decode/x_rd_source_o
 add wave -noupdate -expand -group D /main/DUT/decode/x_rd_write_o
+add wave -noupdate -expand -group D /main/DUT/decode/x_is_undef_o
 add wave -noupdate -expand -group D /main/DUT/decode/x_csr_sel_o
 add wave -noupdate -expand -group D /main/DUT/decode/x_csr_imm_o
 add wave -noupdate -expand -group D /main/DUT/decode/x_is_csr_o
@@ -94,7 +95,6 @@ add wave -noupdate -expand -group X -radix decimal /main/cycles
 add wave -noupdate -expand -group X /main/DUT/execute/x_stall_i
 add wave -noupdate -expand -group X /main/DUT/execute/x_kill_i
 add wave -noupdate -expand -group X /main/DUT/execute/x_stall_req_o
-add wave -noupdate -expand -group X /main/DUT/execute/w_stall_req_i
 add wave -noupdate -expand -group X /main/DUT/execute/d_pc_i
 add wave -noupdate -expand -group X /main/DUT/execute/d_rd_i
 add wave -noupdate -expand -group X /main/DUT/execute/d_fun_i
@@ -113,6 +113,10 @@ add wave -noupdate -expand -group X /main/DUT/execute/d_is_signed_compare_i
 add wave -noupdate -expand -group X /main/DUT/execute/d_is_signed_alu_op_i
 add wave -noupdate -expand -group X /main/DUT/execute/d_is_add_i
 add wave -noupdate -expand -group X /main/DUT/execute/d_is_shift_i
+add wave -noupdate -expand -group X /main/DUT/execute/d_is_load_i
+add wave -noupdate -expand -group X /main/DUT/execute/d_is_store_i
+add wave -noupdate -expand -group X /main/DUT/execute/d_is_divide_i
+add wave -noupdate -expand -group X /main/DUT/execute/d_is_undef_i
 add wave -noupdate -expand -group X /main/DUT/execute/d_rd_source_i
 add wave -noupdate -expand -group X /main/DUT/execute/d_rd_write_i
 add wave -noupdate -expand -group X /main/DUT/execute/f_branch_target_o
@@ -153,26 +157,21 @@ add wave -noupdate -expand -group X /main/DUT/execute/cmp_rs
 add wave -noupdate -expand -group X /main/DUT/execute/cmp_equal
 add wave -noupdate -expand -group X /main/DUT/execute/cmp_lt
 add wave -noupdate -expand -group X /main/DUT/execute/f_branch_take
-add wave -noupdate -expand -group X /main/DUT/execute/x_stall_req_shifter
-add wave -noupdate -expand -group X /main/DUT/execute/x_stall_req_multiply
-add wave -noupdate -expand -group X /main/DUT/execute/x_stall_req_divide
 add wave -noupdate -expand -group X /main/DUT/execute/rd_shifter
 add wave -noupdate -expand -group X /main/DUT/execute/rd_csr
 add wave -noupdate -expand -group X /main/DUT/execute/rd_mul
 add wave -noupdate -expand -group X /main/DUT/execute/rd_div
 add wave -noupdate -expand -group X /main/DUT/execute/exception
+add wave -noupdate -expand -group X /main/DUT/execute/exception_vector
 add wave -noupdate -expand -group X /main/DUT/execute/csr_mie
 add wave -noupdate -expand -group X /main/DUT/execute/csr_mip
 add wave -noupdate -expand -group X /main/DUT/execute/csr_mepc
 add wave -noupdate -expand -group X /main/DUT/execute/csr_mstatus
 add wave -noupdate -expand -group X /main/DUT/execute/csr_mcause
 add wave -noupdate -expand -group X /main/DUT/execute/csr_write_value
-add wave -noupdate -expand -group X /main/DUT/execute/csr_mmause
 add wave -noupdate -expand -group X /main/DUT/execute/alu_addsub_op1
 add wave -noupdate -expand -group X /main/DUT/execute/alu_addsub_op2
 add wave -noupdate -expand -group X /main/DUT/execute/alu_addsub_result
-add wave -noupdate -expand -group X /main/DUT/execute/is_load
-add wave -noupdate -expand -group X /main/DUT/execute/is_store
 add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/clk_i
 add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/rst_i
 add wave -noupdate -group ExceptionUnit /main/DUT/execute/exception_unit/x_stall_i
@@ -247,10 +246,8 @@ add wave -noupdate -expand -group WB /main/DUT/writeback/rf_rd_o
 add wave -noupdate -expand -group WB /main/DUT/writeback/rf_rd_write_o
 add wave -noupdate -expand -group WB /main/DUT/writeback/TRIG2
 add wave -noupdate -expand -group WB /main/DUT/writeback/load_value
-add wave -noupdate -expand -group WB /main/DUT/writeback/pending_load
-add wave -noupdate -expand -group WB /main/DUT/writeback/pending_store
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {6906 ps} 0}
+WaveRestoreCursors {{Cursor 1} {2279679 ps} 0}
 configure wave -namecolwidth 250
 configure wave -valuecolwidth 100
 configure wave -justifyvalue left
@@ -265,4 +262,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {0 ps} {578560 ps}
+WaveRestoreZoom {2205824 ps} {2350464 ps}

@@ -158,8 +158,10 @@ module main;
    
 
    initial begin
-//      load_ram("../../sw/uart_bootloader/uart-bootloader.ram");
-      load_ram("../../sw/hello/hello.ram");
+//      load_ram("../../sw/test3/test3.ram");
+//      load_ram("../../sw/testsuite/benchmarks/dhrystone/dhrystone.ram");
+
+      load_ram("../../sw/testsuite/isa/rv32ui-p-mul.ram");
       repeat(3) @(posedge clk);
       rst = 0;
    end

@@ -24,12 +24,10 @@
 
 module rv_regmem 
 (
- 
  input 	       clk_i,
  input 	       rst_i,
 
  input 	       en1_i,
- input 	       en2_i,
  
  input [4:0]   a1_i,
  output [31:0] q1_o,
@@ -48,6 +46,7 @@ module rv_regmem
    reg [31:0] q1_int;
    
    always@(posedge clk_i)
+     if(en1_i)
        q1_int <= ram[a1_i];
 
    always@(posedge clk_i)
@@ -96,8 +95,7 @@ module rv_regfile
  input 	       clk_i,
  input 	       rst_i,
 
- input 	       x_stall_i,
- input 	       w_stall_i,
+ input 	       d_stall_i,
 
  input [4:0]   rf_rs1_i,
  input [4:0]   rf_rs2_i,
@@ -118,13 +116,14 @@ module rv_regfile
  );
 
 
-      wire [31:0] rs1_regfile;
-      wire [31:0] rs2_regfile;
+   wire [31:0] rs1_regfile;
+   wire [31:0] rs2_regfile;
    wire 	  write  = (w_rd_store_i && (w_rd_i != 0));
 
    rv_regmem bank0 (
 		    .clk_i(clk_i),
 		    .rst_i (rst_i ),
+		    .en1_i(!d_stall_i),
 		    .a1_i(rf_rs1_i),
 		    .q1_o(rs1_regfile),
 
@@ -136,7 +135,7 @@ module rv_regfile
    rv_regmem bank1 (
 		    .clk_i(clk_i),
 		    .rst_i (rst_i ),
-
+		    .en1_i(!d_stall_i),
 		    .a1_i(rf_rs2_i),
 		    .q1_o(rs2_regfile),
 

@@ -257,8 +257,7 @@ module rv_cpu
       .clk_i(clk_i),
       .rst_i(rst_i),
 
-      .x_stall_i(x_stall),
-      .w_stall_i(w_stall),
+      .d_stall_i(d_stall),
 
       .rf_rs1_i(rf_rs1),
       .rf_rs2_i(rf_rs2),

@@ -129,7 +129,8 @@ begin
     end if;
   end process;
 
-  dm_is_wishbone <= '1' when unsigned(dm_addr(g_address_bits-1 downto 0)) >= g_wishbone_start else '0';
+--  dm_is_wishbone <= '1' when unsigned(dm_addr(20g_address_bits-1 downto 0)) >= g_wishbone_start else '0';
+  dm_is_wishbone <=  dm_addr(31);
 
   -- Wishbone bus arbitration / internal RAM access
   process(clk_sys_i)

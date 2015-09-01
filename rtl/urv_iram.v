@@ -91,6 +91,19 @@ module urv_iram
 	    `RAM_INST(64K_30, RAMB16_S1_S1, 15:2, 30, 3)
 	    `RAM_INST(64K_31, RAMB16_S1_S1, 15:2, 31, 3)
 	 end // if (g_size == 65536)
+
+	 if(g_size == 16384) begin
+	    `RAM_INST(16K_0, RAMB16_S4_S4, 13:2, 3:0, 0)
+	    `RAM_INST(16K_1, RAMB16_S4_S4, 13:2, 7:4, 0)
+	    `RAM_INST(16K_2, RAMB16_S4_S4, 13:2, 11:8, 1)
+	    `RAM_INST(16K_3, RAMB16_S4_S4, 13:2, 15:12, 1)	
+	    `RAM_INST(16K_4, RAMB16_S4_S4, 13:2, 19:16, 2)
+	    `RAM_INST(16K_5, RAMB16_S4_S4, 13:2, 23:20, 2)
+ 	    `RAM_INST(16K_6, RAMB16_S4_S4, 13:2, 27:24, 3)
+	    `RAM_INST(16K_7, RAMB16_S4_S4, 13:2, 31:28, 3)
+	 end
+	 
+	 
       end else begin // if (!g_simulation)
 
 // synthesis translate_off

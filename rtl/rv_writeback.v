@@ -35,7 +35,6 @@ module rv_writeback
    input 	     x_load_i,
    input 	     x_store_i,
    
-   input 	     x_load_hazard_i,
    input [31:0]      x_dm_addr_i,
    input [4:0] 	     x_rd_i,
    input [31:0]      x_rd_value_i,

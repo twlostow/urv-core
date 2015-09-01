@@ -29,8 +29,7 @@ entity xrv_core is
     g_internal_ram_size      : integer               := 65536;
     g_internal_ram_init_file : string                := "";
     g_simulation : boolean := false;
-    g_address_bits           : integer               := 32;
-    g_wishbone_start         : unsigned(31 downto 0) := x"00020000"
+    g_address_bits           : integer               := 32
     );
 
   port (
@@ -100,6 +99,7 @@ architecture wrapper of xrv_core is
      qb_o :out std_logic_vector(31 downto 0)
     );
     end component;
+
   
 
   signal cpu_rst, cpu_rst_d  : std_logic;

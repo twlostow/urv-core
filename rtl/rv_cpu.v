@@ -209,9 +209,6 @@ module rv_cpu
       .d_w_rs1_bypass_i(d_w_rs1_bypass),
       .d_w_rs2_bypass_i(d_w_rs2_bypass),
       
-      
-      .x_load_hazard_o(d2x_load_hazard),
-      
       .x_valid_o(d2x_valid),
       .x_pc_o(d2x_pc),
       .x_rs1_o(d2x_rs1),
@@ -325,7 +322,6 @@ module rv_cpu
       .d_csr_imm_i ( d2x_csr_imm ),
       .d_csr_sel_i (d2x_csr_sel),
       
-      .d_load_hazard_i(d2x_load_hazard),
       .d_pc_i(d2x_pc),
       .d_rd_i(d2x_rd),
       .d_fun_i(d2x_fun),
@@ -359,7 +355,6 @@ module rv_cpu
       .f_branch_take_o (x2f_bra),
 
 
-      .w_load_hazard_o(x2w_load_hazard),
    // Writeback stage I/F
       .w_fun_o(x2w_fun),
       .w_load_o(x2w_load),
@@ -398,7 +393,6 @@ module rv_cpu
       
       .x_fun_i(x2w_fun),
       .x_load_i(x2w_load),
-      .x_load_hazard_i(x2w_load_hazard),
       .x_store_i(x2w_store),
 
       .x_valid_i(x2w_valid),

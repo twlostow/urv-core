@@ -43,7 +43,6 @@ module rv_exec
 
    input 	     d_valid_i,
 
-   input 	     d_load_hazard_i,
    
    input [4:0] 	     d_opcode_i,
    input 	     d_shifter_sign_i,
@@ -76,7 +75,6 @@ module rv_exec
    output reg [31:0] f_branch_target_o,
    output 	     f_branch_take_o,
 
-   output 	     w_load_hazard_o,
 
    input 	     irq_i,
    
@@ -242,13 +240,8 @@ module rv_exec
      end
 	
 
-  
-   
-
    wire [32:0] alu_addsub_op1 = {d_is_signed_alu_op_i ? alu_op1[31] : 1'b0, alu_op1 };
    wire [32:0] alu_addsub_op2 = {d_is_signed_alu_op_i ? alu_op2[31] : 1'b0, alu_op2 };
-
-
    
    reg [32:0]  alu_addsub_result;
 
@@ -338,6 +331,7 @@ module rv_exec
      case (d_rd_source_i)
        `RD_SOURCE_ALU: rd_value <= alu_result;
        `RD_SOURCE_CSR: rd_value <= rd_csr;
+       
 //       `RD_SOURCE_DIVIDE: rd_value <= rd_divide;
        default: rd_value <= 32'hx;
      endcase // case (x_rd_source_i)
@@ -432,17 +426,10 @@ module rv_exec
    
    always@(posedge clk_i) 
       if (rst_i) begin
-//	 f_branch_target_o <= 0;
 	 f_branch_take   <= 0;
-//	 w_rd_write_o <= 0;
-//	 w_rd_o <= 0;
-//	 w_fun_o <= 0;
 	 w_load_o <= 0;
 	 w_store_o <= 0;
-//	 w_dm_addr_o <= 0;
-//	 w_rd_source_o <= 0;
 	 w_valid_o <= 0;
-	 
       end else if (!x_stall_i) begin
 	 f_branch_target_o <= branch_target;
 	 f_branch_take <= branch_take && !x_kill_i && d_valid_i;
@@ -459,7 +446,6 @@ module rv_exec
 
    assign f_branch_take_o = f_branch_take;
    
-
    always@*
      if(f_branch_take)
        x_stall_req_o <= 0;
@@ -469,8 +455,6 @@ module rv_exec
        x_stall_req_o <= 1;
      else
        x_stall_req_o <= 0;
-
-   assign w_load_hazard_o = d_load_hazard_i;
 
 endmodule
 	       

@@ -1,0 +1,138 @@
+
+  .macro save_tf
+  # save gprs
+  sw  x1,1*4(x2)
+  sw  x3,3*4(x2)
+  sw  x4,4*4(x2)
+  sw  x5,5*4(x2)
+  sw  x6,6*4(x2)
+  sw  x7,7*4(x2)
+  sw  x8,8*4(x2)
+  sw  x9,9*4(x2)
+  sw  x10,10*4(x2)
+  sw  x11,11*4(x2)
+  sw  x12,12*4(x2)
+  sw  x13,13*4(x2)
+  sw  x14,14*4(x2)
+  sw  x15,15*4(x2)
+  sw  x16,16*4(x2)
+  sw  x17,17*4(x2)
+  sw  x18,18*4(x2)
+  sw  x19,19*4(x2)
+  sw  x20,20*4(x2)
+  sw  x21,21*4(x2)
+  sw  x22,22*4(x2)
+  sw  x23,23*4(x2)
+  sw  x24,24*4(x2)
+  sw  x25,25*4(x2)
+  sw  x26,26*4(x2)
+  sw  x27,27*4(x2)
+  sw  x28,28*4(x2)
+  sw  x29,29*4(x2)
+  sw  x30,30*4(x2)
+  sw  x31,31*4(x2)
+
+  # get sr, epc, badvaddr, cause
+  csrrw  t0,sscratch,x0
+  csrr   s0,sstatus
+  csrr   t2,sepc
+  csrr   t3,scause
+  sw  t0,2*4(x2)
+  sw  s0,32*4(x2)
+  sw  t2,33*4(x2)
+  sw  t3,35*4(x2)
+
+  # get faulting insn, if it wasn't a fetch-related trap
+  li x5,-1
+  sw x5,36*4(x2)
+1:
+  .endm
+
+  .section    .boot, "ax", @progbits
+
+ .global _start
+_start:
+    j _entry
+_irq_entry:
+    csrrw sp, sscratch, sp
+    bnez sp, 1f
+    csrr sp, sscratch
+    1:addi sp,sp,-320
+    save_tf
+    move  a0,sp
+    jal _handle_irq
+
+    mv a0,sp
+    # don't resw sstatus if trap came from kernel
+  #  andi s0,s0,SSTATUS_PS
+   # bnez s0,start_user
+    addi sp,sp,320
+    csrw sscratch,sp
+
+  #.globl start_user
+#start_user:
+ #   csrc sstatus, SSTATUS_IE
+    li t0, SSTATUS_PS
+    lw t1, 32*4(a0)
+    lw t2, 33*4(a0)
+    csrc sstatus, t0
+    and t0, t0, t1
+    csrs sstatus, t0
+    csrw sepc, t2
+
+      # resw x registers
+    lw  x1,1*4(a0)
+      lw  x2,2*4(a0)
+      lw  x3,3*4(a0)
+      lw  x4,4*4(a0)
+      lw  x5,5*4(a0)
+      lw  x6,6*4(a0)
+      lw  x7,7*4(a0)
+      lw  x8,8*4(a0)
+      lw  x9,9*4(a0)
+      lw  x11,11*4(a0)
+      lw  x12,12*4(a0)
+      lw  x13,13*4(a0)
+      lw  x14,14*4(a0)
+      lw  x15,15*4(a0)
+      lw  x16,16*4(a0)
+      lw  x17,17*4(a0)
+      lw  x18,18*4(a0)
+      lw  x19,19*4(a0)
+      lw  x20,20*4(a0)
+      lw  x21,21*4(a0)
+      lw  x22,22*4(a0)
+      lw  x23,23*4(a0)
+      lw  x24,24*4(a0)
+      lw  x25,25*4(a0)
+      lw  x26,26*4(a0)
+      lw  x27,27*4(a0)
+      lw  x28,28*4(a0)
+      lw  x29,29*4(a0)
+      lw  x30,30*4(a0)
+      lw  x31,31*4(a0)
+# resw a0 last
+      lw  x10,10*4(a0)
+      eret
+# gtfo
+
+_entry:
+
+        la      gp, _gp                 # Initialize global pointer
+	la      sp, _fstack
+
+# clear the bss segment
+	la	t0, _fbss
+	la	t1, _end
+1:
+#ifdef __riscv64
+	sd	zero,0(t0)
+	addi	t0, t0, 8
+#else
+	sw	zero,0(t0)
+	addi	t0, t0, 4
+#endif
+	bltu	t0, t1, 1b
+
+        call    main
+

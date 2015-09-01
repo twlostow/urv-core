@@ -36,7 +36,8 @@ use unisim.vcomponents.all;
 entity spec_top is
   generic (
     g_riscv_firmware : string  := "uart-bootloader.ram";
-    g_riscv_mem_size : integer := 65536
+    g_riscv_mem_size : integer := 65536;
+    g_simulation : boolean := false
     );
   port (
     button1_n_i: in std_logic := '1';
@@ -67,6 +68,7 @@ architecture rtl of spec_top is
     generic (
       g_internal_ram_size      : integer;
       g_internal_ram_init_file : string;
+      g_simulation : boolean;
       g_address_bits           : integer;
       g_wishbone_start         : unsigned(31 downto 0));
     port (
@@ -95,13 +97,14 @@ architecture rtl of spec_top is
   signal cnx_master_out : t_wishbone_master_out_array(c_cnx_master_ports-1 downto 0);
 
   constant c_cfg_base_addr : t_wishbone_address_array(c_cnx_master_ports-1 downto 0) :=
-    (c_slave_gpio => x"00021000",                  -- GPIO
-     c_slave_uart => x"00020000");                 -- UART
+    (c_slave_gpio => x"80001000",                  -- GPIO
+     c_slave_uart => x"80000000");                 -- UART
 
 
+ 
   constant c_cfg_base_mask : t_wishbone_address_array(c_cnx_master_ports-1 downto 0) :=
-    (c_slave_gpio => x"000ff000",
-     c_slave_uart => x"000ff000" );
+    (c_slave_gpio => x"8000f000",
+     c_slave_uart => x"8000f000" );
 
   signal clk_125m_pllref : std_logic;
   signal pllout_clk_fb_pllref, pllout_clk_sys, clk_sys, sys_locked, sys_locked_n : std_logic;
@@ -130,7 +133,7 @@ begin  -- rtl
      DIVCLK_DIVIDE      => 1,
      CLKFBOUT_MULT      => 8,
      CLKFBOUT_PHASE     => 0.000,
-     CLKOUT0_DIVIDE     => 16,          -- 62.5 MHz
+     CLKOUT0_DIVIDE     => 10,          -- 62.5 MHz
      CLKOUT0_PHASE      => 0.000,
      CLKOUT0_DUTY_CYCLE => 0.500,
      CLKOUT1_DIVIDE     => 8,          -- not used
@@ -175,6 +178,7 @@ begin  -- rtl
    generic map (
      g_internal_ram_size      => g_riscv_mem_size,
      g_internal_ram_init_file => g_riscv_firmware,
+     g_simulation => g_simulation,
      g_address_bits           => 32,
      g_wishbone_start         => x"00020000")
    port map (

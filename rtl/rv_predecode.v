@@ -42,9 +42,14 @@ module rv_decode
  output 	   x_valid_o,
 
  output reg [31:0] x_pc_o,
+
+ input 		   d_x_rs1_bypass_i,
+ input 		   d_x_rs2_bypass_i,
+ input 		   d_w_rs1_bypass_i,
+ input 		   d_w_rs2_bypass_i,
   
- output reg [4:0]  rf_rs1_o,
- output reg [4:0]  rf_rs2_o,
+ output [4:0] 	   rf_rs1_o,
+ output [4:0] 	   rf_rs2_o,
 
  output [4:0] 	   x_rs1_o,
  output [4:0] 	   x_rs2_o,
@@ -57,7 +62,6 @@ module rv_decode
  output [4:0] 	   x_opcode_o,
  output reg 	   x_shifter_sign_o,
  
- output reg [31:0] x_imm_o,
  output reg 	   x_is_signed_compare_o,
  output reg 	   x_is_signed_alu_op_o,
  output reg 	   x_is_add_o,
@@ -74,8 +78,19 @@ module rv_decode
  output reg [4:0]  x_csr_imm_o,
  output reg 	   x_is_csr_o,
 
- output reg 	   x_is_eret_o
- );
+ output reg 	   x_is_eret_o,
+
+ output reg [31:0] x_imm_o,
+ 
+ output reg [31:0] x_alu_op1_o,
+ output reg [31:0] x_alu_op2_o,
+
+ output reg 	   x_use_op1_o,
+ output reg 	   x_use_op2_o,
+
+ output reg [1:0] x_op1_sel_o,
+ output reg [1:0] x_op2_sel_o
+);
 
 
    wire [4:0] f_rs1 = f_ir_i[19:15];
@@ -95,31 +110,11 @@ module rv_decode
    assign x_rd_o = x_rd;
    assign x_opcode_o = x_opcode;
 
-   always@*
-     if(d_stall_i)
-       begin
-	  rf_rs1_o <= x_rs1;
-	  rf_rs2_o <= x_rs2;
-       end else begin
-	  rf_rs1_o <= f_rs1;
-	  rf_rs2_o <= f_rs2;
-       end
-   reg[31:0] x_ir;
-   
-   
-   always@(posedge clk_i)
-     if(rst_i)
-       begin
-	  x_pc_o <= 0;
-	  x_valid <= 0;
-       end else if(!d_stall_i) begin
-	  x_valid <= f_valid_i && !d_kill_i;
-	  x_pc_o <= f_pc_i;
-	  x_ir <= f_ir_i;
-	  
-       end
+   assign rf_rs1_o = f_rs1;
+   assign rf_rs2_o = f_rs2;
 
-   assign x_valid_o = x_valid;
+
+   reg [31:0] x_ir;
    
    
    wire [4:0] d_opcode = f_ir_i[6:2];
@@ -154,12 +149,18 @@ module rv_decode
 	 load_hazard <= 0;
    
    reg 	inserting_nop = 0;
+   reg load_hazard_d;
 
+   
    always@(posedge clk_i)
-     if(rst_i)
+     if(rst_i) begin
        inserting_nop <= 0;
-     else if (!d_stall_i)
-       begin
+	load_hazard_d <= 0;
+	
+     end else if (!d_stall_i)
+      begin
+	  load_hazard_d <= load_hazard;
+
 	  if (inserting_nop)
 	    inserting_nop <= 0;
 	  else
@@ -168,30 +169,44 @@ module rv_decode
 
    assign d_stall_req_o = load_hazard && !inserting_nop;
 
-   reg load_hazard_d;
+
+   wire [4:0] f_rd = f_ir_i[11:7];
+   
+
+   assign x_valid_o = x_valid;
    
    always@(posedge clk_i)
-     if(!d_stall_i)
+     if(rst_i || d_kill_i )
        begin
+	  x_pc_o <= 0;
+	  x_valid <= 0;
+       end else  if(!d_stall_i)   begin
+	  x_pc_o <= f_pc_i;
+
+	  if (load_hazard && !inserting_nop)
+	    x_valid <= 0;
+	  else
+	    x_valid <= f_valid_i;
+
+	  x_ir <= f_ir_i;
+
 	  x_rs1 <= f_rs1;
 	  x_rs2 <= f_rs2;
-	  x_rd <= (load_hazard && !inserting_nop) ? 0 : f_ir_i [11:7];
-	  x_opcode <= (load_hazard && !inserting_nop) ? `OPC_OP : d_opcode;
-	  load_hazard_d <= load_hazard;
+	  x_rd <= f_rd;
+	  x_opcode <= d_opcode;
+	  
 	  x_shamt_o <= f_ir_i[24:20];
        end
    
 
    always@(posedge clk_i)
      if(!d_stall_i)
-       if (load_hazard)
-	 x_fun_o <= `FUNC_ADD;
-       else case (d_opcode)
-	      `OPC_JAL, `OPC_JALR, `OPC_LUI, `OPC_AUIPC:
-		x_fun_o <= `FUNC_ADD;
-	      default:
-		x_fun_o <= d_fun;
-	    endcase // case (f_opcode)
+       case (d_opcode)
+	 `OPC_JAL, `OPC_JALR, `OPC_LUI, `OPC_AUIPC:
+	   x_fun_o <= `FUNC_ADD;
+	 default:
+	   x_fun_o <= d_fun;
+	 endcase // case (f_opcode)
    
    always@(posedge clk_i)
      if(!d_stall_i)
@@ -208,22 +223,76 @@ module rv_decode
    
 
    
+   reg [31:0] d_imm;
    
+   
+   always@*
+     case(d_opcode)
+       `OPC_LUI, `OPC_AUIPC: d_imm <= d_imm_u;
+       `OPC_OP_IMM, `OPC_LOAD: d_imm <= d_imm_i;
+       `OPC_STORE: d_imm <= d_imm_s;
+       `OPC_JAL: d_imm <= d_imm_j;
+       `OPC_JALR: d_imm <= d_imm_i;
+       `OPC_BRANCH: d_imm <= d_imm_b;
+       default: d_imm <= 32'hx;
+     endcase // case (opcode)
+
    always@(posedge clk_i)
-     begin
-	if(!d_stall_i)
-	  case(d_opcode)
-	    `OPC_LUI, `OPC_AUIPC: x_imm_o <= d_imm_u;
-	    `OPC_OP_IMM, `OPC_LOAD: x_imm_o <= d_imm_i;
-	    `OPC_STORE: x_imm_o <= d_imm_s;
-	    `OPC_JAL: x_imm_o <= d_imm_j;
-	    `OPC_JALR: x_imm_o <= d_imm_i;
-	    `OPC_BRANCH: x_imm_o <= d_imm_b;
-	    default: x_imm_o <= 32'hx;
-	  endcase // case (opcode)
-     end // always@ (posedge clk_i)
+     if(!d_stall_i)
+       x_imm_o <= d_imm;
+   
 
+   always@(posedge clk_i)
+     if(!d_stall_i)
+       begin
+	  case (d_opcode)
+	    `OPC_LUI, `OPC_AUIPC: 
+	      begin
+		 x_alu_op1_o <= d_imm; 
+		 x_use_op1_o <= 1;
+	      end
+	    `OPC_JAL, `OPC_JALR:
+	      begin
+		 x_alu_op1_o <= 4; 
+		 x_use_op1_o <= 1;
+	      end
+	    
+	    default:
+	      begin
+		 x_alu_op1_o <= 32'hx; 
+		 x_use_op1_o <= 0;
+	      end
+	  endcase // case (d_opcode)
 
+	  case (d_opcode)
+	    `OPC_LUI:
+	      begin
+		 x_alu_op2_o <= 0;
+		 x_use_op2_o <= 1;
+	      end
+	    `OPC_AUIPC, `OPC_JAL, `OPC_JALR:
+	      begin
+		 x_alu_op2_o <= f_pc_i;
+		 x_use_op2_o <= 1;
+	      end
+	    
+	    `OPC_OP_IMM:
+	      begin
+		 x_alu_op2_o <= d_imm;
+		 x_use_op2_o <= 1;
+	      end
+
+	    default:
+	      begin
+		 x_alu_op2_o <= 32'hx; 
+		 x_use_op2_o <= 0;
+	      end
+	  endcase // case (d_opcode_i)
+       end // if (!d_stall_i)
+   
+   
+   wire d_rd_nonzero = (f_rd != 0);
+   
    // misc decoding
    always@(posedge clk_i)
      if(!d_stall_i)
@@ -263,9 +332,9 @@ module rv_decode
 	  // rdest write value
 	  case (d_opcode)
 	    `OPC_OP_IMM, `OPC_OP, `OPC_JAL, `OPC_JALR, `OPC_LUI, `OPC_AUIPC:
-	      x_rd_write <= 1;
+	      x_rd_write <= d_rd_nonzero;
 	    `OPC_SYSTEM:
-	      x_rd_write <= (d_fun != 0); // CSR instructions write to RD
+	      x_rd_write <= d_rd_nonzero && (d_fun != 0); // CSR instructions write to RD
 	    default:
 	      x_rd_write <= 0;
 	  endcase // case (d_opcode)

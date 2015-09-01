@@ -26,10 +26,10 @@
 
 #include "riscv.h"
 
-#define BASE_CLOCK 62500000 // Xtal frequency
+#define BASE_CLOCK 100000000 // Xtal frequency
 
-#define BASE_UART 0x20000
-#define BASE_GPIO 0x21000
+#define BASE_UART 0x80000000
+#define BASE_GPIO 0x80001000
 
 #define UART_BAUDRATE 115200
 

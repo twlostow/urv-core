@@ -96,4 +96,7 @@
 `define EXCEPT_TIMER 9
 `define EXCEPT_IRQ 10
 
-
+`define OP_SEL_BYPASS_X 0
+`define OP_SEL_BYPASS_W 1
+`define OP_SEL_DIRECT 2
+`define OP_SEL_IMM 3

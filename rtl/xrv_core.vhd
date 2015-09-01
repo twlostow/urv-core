@@ -28,6 +28,7 @@ entity xrv_core is
   generic (
     g_internal_ram_size      : integer               := 65536;
     g_internal_ram_init_file : string                := "";
+    g_simulation : boolean := false;
     g_address_bits           : integer               := 32;
     g_wishbone_start         : unsigned(31 downto 0) := x"00020000"
     );
@@ -76,6 +77,30 @@ architecture wrapper of xrv_core is
       );
   end component;
 
+  component urv_iram
+    generic (
+       g_size : integer;
+       g_init_file : string;
+       g_simulation : boolean
+    ); 
+   port (
+     clk_i : in std_logic;
+
+     ena_i : in std_logic;
+     wea_i : in std_logic;
+     aa_i : in std_logic_vector(31 downto 0);
+     bwea_i : in std_logic_vector(3 downto 0);
+     da_i : in std_logic_vector(31 downto 0);
+     qa_o :out std_logic_vector(31 downto 0);
+     enb_i : in std_logic;
+     web_i : in std_logic;
+     ab_i : in std_logic_vector(31 downto 0);
+     bweb_i : in std_logic_vector(3 downto 0);
+     db_i : in std_logic_vector(31 downto 0);
+     qb_o :out std_logic_vector(31 downto 0)
+    );
+    end component;
+  
 
   signal cpu_rst, cpu_rst_d  : std_logic;
   signal im_addr  : std_logic_vector(31 downto 0);
@@ -211,7 +236,7 @@ begin
     port map (
       clk_i           => clk_sys_i,
       rst_i           => cpu_rst,
-		irq_i => '0',
+      irq_i => '0',
       im_addr_o       => im_addr,
       im_data_i       => im_data,
       im_valid_i      => im_valid,
@@ -227,27 +252,25 @@ begin
 
   dm_data_write <= not dm_is_wishbone and dm_store;
 
-  U_iram : generic_dpram
+  U_iram : urv_iram
     generic map (
-      g_data_width               => 32,
-      g_size                     => g_internal_ram_size/ 4,
-      g_with_byte_enable         => true,
-      g_dual_clock               => false,
-      g_addr_conflict_resolution => "read_first",
-      g_init_file                => g_internal_ram_init_file)
+      g_size                     => g_internal_ram_size,
+      g_init_file                => g_internal_ram_init_file,
+      g_simulation => g_simulation)
     port map (
-      rst_n_i => rst_n_i,
-      clka_i  => clk_sys_i,
+      clk_i  => clk_sys_i,
 
-      wea_i => '0', --ha_im_write,
-      aa_i  => im_addr_muxed(c_mem_address_bits + 1 downto 2),
+      ena_i => '1',
+      wea_i => '0',
+      bwea_i => "0000",
+      aa_i  => im_addr_muxed,
       da_i  => ha_im_wdata,
       qa_o  => im_data,
 
-      clkb_i => clk_sys_i,
+      enb_i => '1',
       bweb_i => dm_data_select,
       web_i  => dm_data_write,
-      ab_i   => dm_addr(c_mem_address_bits + 1 downto 2),
+      ab_i   => dm_addr,
       db_i   => dm_data_s,
       qb_o   => dm_mem_rdata
       );

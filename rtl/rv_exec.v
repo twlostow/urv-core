@@ -62,6 +62,12 @@ module rv_exec
    input 	     d_is_store_i,
    input 	     d_is_divide_i,
    input 	     d_is_undef_i,
+
+   input [31:0]      d_alu_op1_i,
+   input [31:0]      d_alu_op2_i,
+
+   input 	     d_use_op1_i,
+   input 	     d_use_op2_i,
    
    
    input [2:0] 	     d_rd_source_i,
@@ -231,25 +237,10 @@ module rv_exec
    // decode ALU operands
    always@*
      begin
-	case (d_opcode_i)
-	  `OPC_LUI: alu_op1 <= d_imm_i;
-	  `OPC_AUIPC: alu_op1 <= d_imm_i;
-	  `OPC_JAL: alu_op1 <= 4;
-	  `OPC_JALR: alu_op1 <= 4;
-	  default: alu_op1 <= rs1;
-	endcase // case (d_opcode_i)
-	
-
-	case (d_opcode_i)
-	  `OPC_LUI: alu_op2 <= 0;
-	  `OPC_AUIPC: alu_op2 <= d_pc_i;
-	  `OPC_JAL: alu_op2 <= d_pc_i;
-	  `OPC_JALR: alu_op2 <= d_pc_i;
-	  `OPC_OP_IMM: alu_op2 <= d_imm_i;
-	  default: alu_op2 <= rs2;
-	endcase // case (d_opcode_i)
-	
+	alu_op1 <= d_use_op1_i ? d_alu_op1_i : rs1;
+	alu_op2 <= d_use_op2_i ? d_alu_op2_i : rs2;
      end
+	
 
   
    
@@ -274,13 +265,16 @@ module rv_exec
 	case (d_fun_i)
 	  `FUNC_ADD:
 	    alu_result <= alu_addsub_result[31:0];
-	      
-	  `FUNC_XOR: alu_result <= alu_op1 ^ alu_op2;
-	  `FUNC_OR: alu_result <= alu_op1 | alu_op2;
-	  `FUNC_AND: alu_result <= alu_op1 & alu_op2;
-	  `FUNC_SLT: alu_result <= alu_addsub_result[32]?1:0;
-	  `FUNC_SLTU: alu_result <= alu_addsub_result[32]?1:0;
-
+	  `FUNC_XOR: 
+	    alu_result <= alu_op1 ^ alu_op2;
+	  `FUNC_OR: 
+	    alu_result <= alu_op1 | alu_op2;
+	  `FUNC_AND: 
+	    alu_result <= alu_op1 & alu_op2;
+	  `FUNC_SLT: 
+	    alu_result <= alu_addsub_result[32]?1:0;
+	  `FUNC_SLTU: 
+	    alu_result <= alu_addsub_result[32]?1:0;
 	  default: alu_result <= 32'hx;
 	endcase // case (d_fun_i)
      end // always@ *
@@ -409,8 +403,6 @@ module rv_exec
 	    end
 	endcase // case (d_fun_i)
      end
-   
-   
 
    //branch decision
    always@*
@@ -433,63 +425,36 @@ module rv_exec
    assign dm_data_s_o = dm_data_s;
    assign dm_data_select_o = dm_select_s;
 
-/* -----\/----- EXCLUDED -----\/-----
-   wire is_load = (d_opcode_i == `OPC_LOAD ? 1: 0) && d_valid_i && !x_kill_i;
-   wire is_store = (d_opcode_i == `OPC_STORE ? 1: 0) && d_valid_i && !x_kill_i;
- -----/\----- EXCLUDED -----/\----- */
 
    assign dm_load_o =  d_is_load_i & d_valid_i & !x_kill_i & !x_stall_i & !exception;
    assign dm_store_o = d_is_store_i & d_valid_i & !x_kill_i & !x_stall_i & !exception;
-
-/* -----\/----- EXCLUDED -----\/-----
-   wire trig_ent = (d_pc_i == 'h264 && !x_kill_i);
-   wire trig_ret = (d_pc_i == 'h2bc && !x_kill_i);
-   wire trig_wr =  (dm_addr == 'hf368 && is_store && !x_stall_i);
- -----/\----- EXCLUDED -----/\----- */
    
    
    always@(posedge clk_i) 
       if (rst_i) begin
-	 f_branch_target_o <= 0;
+//	 f_branch_target_o <= 0;
 	 f_branch_take   <= 0;
-	 w_rd_write_o <= 0;
+//	 w_rd_write_o <= 0;
 //	 w_rd_o <= 0;
-	 w_fun_o <= 0;
+//	 w_fun_o <= 0;
 	 w_load_o <= 0;
 	 w_store_o <= 0;
-	 w_dm_addr_o <= 0;
-	 w_rd_source_o <= 0;
+//	 w_dm_addr_o <= 0;
+//	 w_rd_source_o <= 0;
 	 w_valid_o <= 0;
 	 
       end else if (!x_stall_i) begin
 	 f_branch_target_o <= branch_target;
 	 f_branch_take <= branch_take && !x_kill_i && d_valid_i;
-
 	 w_rd_o <= d_rd_i;
-	 
 	 w_rd_value_o <= rd_value;
-	 w_rd_write_o <= d_rd_write_i && !x_kill_i && !exception;
+	 w_rd_write_o <= d_rd_write_i && !x_kill_i && d_valid_i && !exception;
 	 w_rd_source_o <= d_rd_source_i;
-	 
 	 w_fun_o <= d_fun_i;
-	 w_load_o <= d_is_load_i & d_valid_i && !x_kill_i && !exception;
-	 w_store_o <= d_is_store_i & d_valid_i && !x_kill_i && !exception;
-	 
-
-/* -----\/----- EXCLUDED -----\/-----
-	 if ( (d_is_load_i || is_store) && !exception && unaligned_addr)
-	   begin
-	      $error("Unaligned address!");
-	      $stop;
-	      
-	   end
- -----/\----- EXCLUDED -----/\----- */
-	 
+	 w_load_o <= d_is_load_i && !x_kill_i && d_valid_i && !exception;
+	 w_store_o <= d_is_store_i && !x_kill_i && d_valid_i && !exception;
 	 w_dm_addr_o <= dm_addr;
-	 w_valid_o <= d_valid_i && !x_kill_i && !exception; 
-	 
-      end else begin // if (!x_stall_i)
-	 w_valid_o <= 0;
+	 w_valid_o <= !exception; 
       end // else: !if(rst_i)
 
    assign f_branch_take_o = f_branch_take;

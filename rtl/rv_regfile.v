@@ -22,7 +22,7 @@
 
 `timescale 1ns/1ps
 
-module rv_regmem 
+module rv_regmem
 (
  input 	       clk_i,
  input 	       rst_i,
@@ -30,7 +30,7 @@ module rv_regmem
  input 	       en1_i,
  
  input [4:0]   a1_i,
- output [31:0] q1_o,
+ output reg [31:0] q1_o,
 
  input [4:0]   a2_i,
  input [31:0]  d2_i,
@@ -47,48 +47,24 @@ module rv_regmem
    
    always@(posedge clk_i)
      if(en1_i)
-       q1_int <= ram[a1_i];
+       q1_o <= ram[a1_i];
 
    always@(posedge clk_i)
      if(we2_i)
 	ram[a2_i] <= d2_i;
 
-   // bypass logic
-
-   always@(posedge clk_i)
-     if(rst_i)
-       bypass <= 0;
-     else
-       bypass <= we2_i && (a1_i == a2_i);
-
-   
-   always@(posedge clk_i)
-     begin
-	if(we2_i)
-	  bypass_r <= d2_i;
-     end
-   
-   assign q1_o = bypass ? bypass_r : q1_int;
-   
-   
 // synthesis translate_off
 initial begin : ram_init
    integer i;
 
    for(i=0;i<32; i=i+1) begin
       ram[i] = 0;
-      
    end
-   
-   
 end
-
-// synthesis translate_on   
+// synthesis translate_on
    
-endmodule // rv_regmem
+endmodule // rv_regmem2
 
-   
-  
 
 module rv_regfile
 (
@@ -103,8 +79,8 @@ module rv_regfile
  input [4:0]   d_rs1_i,
  input [4:0]   d_rs2_i,
 
- output [31:0] x_rs1_value_o,
- output [31:0] x_rs2_value_o,
+ output reg [31:0] x_rs1_value_o,
+ output reg [31:0] x_rs2_value_o,
 
  input [4:0]   w_rd_i,
  input [31:0]  w_rd_value_i,
@@ -144,14 +120,49 @@ module rv_regfile
 		    .we2_i (write)
 		    );
    
-   wire 	  rs1_bypass = w_bypass_rd_write_i && (w_rd_i == d_rs1_i) && (w_rd_i != 0);
-   wire 	  rs2_bypass = w_bypass_rd_write_i && (w_rd_i == d_rs2_i) && (w_rd_i != 0);
+   wire 	  rs1_bypass_x = w_bypass_rd_write_i && (w_rd_i == d_rs1_i) && (w_rd_i != 0);
+   wire 	  rs2_bypass_x = w_bypass_rd_write_i && (w_rd_i == d_rs2_i) && (w_rd_i != 0);
+
+   reg 		  rs1_bypass_w, rs2_bypass_w;
+ 
+   always@(posedge clk_i)
+     if(rst_i)
+       begin
+          rs1_bypass_w <= 0;
+	  rs2_bypass_w <= 0;
+       end else begin
+	  rs1_bypass_w <= write && (rf_rs1_i == w_rd_i);
+	  rs2_bypass_w <= write && (rf_rs2_i == w_rd_i);
+       end
    
-   assign x_rs1_value_o = rs1_bypass ? w_bypass_rd_value_i : rs1_regfile;
-   assign x_rs2_value_o = rs2_bypass ? w_bypass_rd_value_i : rs2_regfile;
+   reg [31:0] 	  bypass_w;
+
+   always@(posedge clk_i)
+     if(write)
+       bypass_w <= w_rd_value_i;
+
+   always@*
+     begin
+	case ( {rs1_bypass_x, rs1_bypass_w } ) // synthesis parallel_case full_case
+	  2'b10, 2'b11:
+	    x_rs1_value_o <= w_bypass_rd_value_i;
+	  2'b01:
+	    x_rs1_value_o <= bypass_w;
+	  default:
+	    x_rs1_value_o <= rs1_regfile;
+	endcase // case ( {rs1_bypass_x, rs1_bypass_w } )
+
+	case ( {rs2_bypass_x, rs2_bypass_w } ) // synthesis parallel_case full_case
+	  2'b10, 2'b11:
+	    x_rs2_value_o <= w_bypass_rd_value_i;
+	  2'b01:
+	    x_rs2_value_o <= bypass_w;
+	  default:
+	    x_rs2_value_o <= rs2_regfile;	 
+	endcase // case ( {rs2_bypass_x, rs2_bypass_w } )
+     end // always@ *
+   
 
 endmodule // rv_regfile
 
-
-      		    
 		 

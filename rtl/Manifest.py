@@ -18,4 +18,5 @@ files = [ "rv_cpu.v",
 	  "rv_csr.v",
           "rv_timer.v",
           "rv_exceptions.v",
+          "urv_iram.v",
 	  "../sim/rv_icache_model.sv"];

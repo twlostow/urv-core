@@ -50,7 +50,11 @@ endmodule
 
 
 module rv_cpu
-  (
+  #(
+    parameter g_timer_frequency = 1000,
+    parameter g_clock_frequency = 100000000
+   ) 
+   (
    input 	 clk_i,
    input 	 rst_i,
 
@@ -119,12 +123,16 @@ module rv_cpu
    wire 	 d_stall, d_kill;
    wire [39:0] 	 csr_time, csr_cycles;
    
+   wire [31:0] 	 im_addr;
+
+   assign im_addr_o = im_addr;
+   
    
    rv_fetch fetch
      (
       .clk_i(clk_i),
       .rst_i(rst_i),
-      .im_addr_o(im_addr_o),
+      .im_addr_o(im_addr),
       .im_data_i(im_data_i),
       .im_valid_i(im_valid_i),
 
@@ -161,18 +169,21 @@ module rv_cpu
 		      .TRIG3(TRIG3) );
  -----/\----- EXCLUDED -----/\----- */
 
-   assign TRIG0 = f2d_pc;
-   assign TRIG1 = f2d_ir;
-   assign TRIG2[0] = rst_i;
-   assign TRIG2[1] = f2d_valid;
-   assign TRIG2[2] = f_kill;
-   assign TRIG2[3] = f_stall;
-   assign TRIG2[4] = w_stall_req;
-   assign TRIG2[5] = x_stall_req;
 
    wire 	 d_stall_req;
    
+   wire [31:0] 	 d2x_alu_op1, d2x_alu_op2;
+   wire  	 d2x_use_op1, d2x_use_op2;
 
+   
+   wire 	 d_x_rs1_bypass;
+   wire 	 d_x_rs2_bypass;
+   wire 	 d_w_rs1_bypass;
+   wire 	 d_w_rs2_bypass;
+
+   assign TRIG0 = im_addr;
+   assign TRIG1 = im_data_i;
+   assign TRIG2[0] = im_valid_i;
    
    
    rv_decode decode
@@ -193,22 +204,27 @@ module rv_cpu
       .rf_rs1_o(rf_rs1),
       .rf_rs2_o(rf_rs2),
 
+      .d_x_rs1_bypass_i(d_x_rs1_bypass),
+      .d_x_rs2_bypass_i(d_x_rs2_bypass),
+      .d_w_rs1_bypass_i(d_w_rs1_bypass),
+      .d_w_rs2_bypass_i(d_w_rs2_bypass),
+      
+      
       .x_load_hazard_o(d2x_load_hazard),
       
       .x_valid_o(d2x_valid),
       .x_pc_o(d2x_pc),
       .x_rs1_o(d2x_rs1),
       .x_rs2_o(d2x_rs2),
-      
+      .x_imm_o(d2x_imm),
       .x_rd_o(d2x_rd),
-
+      
       .x_shamt_o(d2x_shamt),
       .x_fun_o(d2x_fun),
 
       .x_opcode_o(d2x_opcode),
       .x_shifter_sign_o(d2x_shifter_sign),
 
-      .x_imm_o(d2x_imm),
       .x_is_signed_compare_o(d2x_is_signed_compare),
       .x_is_signed_alu_op_o(d2x_is_signed_alu_op),
       .x_is_add_o(d2x_is_add),
@@ -220,15 +236,19 @@ module rv_cpu
       .x_rd_source_o(d2x_rd_source),
       .x_rd_write_o(d2x_rd_write),
 
-      .x_csr_sel_o ( d2x_csr_sel),
-      .x_csr_imm_o ( d2x_csr_imm),
-      .x_is_csr_o ( d2x_is_csr ),
-      .x_is_eret_o ( d2x_is_eret )
+      .x_csr_sel_o (d2x_csr_sel),
+      .x_csr_imm_o (d2x_csr_imm),
+      .x_is_csr_o (d2x_is_csr),
+      .x_is_eret_o (d2x_is_eret),
+      
+      .x_alu_op1_o(d2x_alu_op1),
+      .x_alu_op2_o(d2x_alu_op2),
 
+      .x_use_op1_o(d2x_use_op1),
+      .x_use_op2_o(d2x_use_op2)
+   );
 
-      );
-
-      wire [4:0] 	 x2w_rd;
+   wire [4:0] 	 x2w_rd;
    wire [31:0] 	 x2w_rd_value;
    wire [31:0] 	 x2w_rd_shifter;
    wire [31:0] 	 x2w_rd_multiply;
@@ -251,6 +271,13 @@ module rv_cpu
    
    wire [31:0] 	 rf_bypass_rd_value = x2w_rd_value;
    wire  	 rf_bypass_rd_write = rf_rd_write && !x2w_load; // multiply/shift too?
+
+   
+
+   assign d_x_rs1_bypass = (d2x_rd == rf_rs1) && d2x_rd_write && d2x_valid;
+   assign d_x_rs2_bypass = (d2x_rd == rf_rs2) && d2x_rd_write && d2x_valid;
+   assign d_w_rs1_bypass = (x2w_rd == rf_rs1) && rf_rd_write && x2w_valid;
+   assign d_w_rs2_bypass = (x2w_rd == rf_rs2) && rf_rd_write && x2w_valid;
    
    rv_regfile regfile
      (
@@ -277,7 +304,6 @@ module rv_cpu
       );
 
    
-
  
    
    rv_exec execute
@@ -311,6 +337,13 @@ module rv_cpu
       .d_is_load_i(d2x_is_load),
       .d_is_store_i(d2x_is_store),
       .d_is_undef_i(d2x_is_undef),
+
+      .d_alu_op1_i(d2x_alu_op1),
+      .d_alu_op2_i(d2x_alu_op2),
+
+      .d_use_op1_i(d2x_use_op1),
+      .d_use_op2_i(d2x_use_op2),
+
       
       .d_rd_source_i(d2x_rd_source),
       .d_rd_write_i(d2x_rd_write),
@@ -355,7 +388,6 @@ module rv_cpu
 
    wire [31:0] 	 wb_trig2;
    
-
    rv_writeback writeback
      (
       .clk_i(clk_i),
@@ -406,7 +438,11 @@ module rv_cpu
    assign TRIG2[16] = (stall_timeout == 63) ? 1'b1 : 1'b0;
    
    
-   rv_timer ctimer (
+   rv_timer 
+     #(
+       .g_timer_frequency(g_timer_frequency),
+       .g_clock_frequency(g_clock_frequency)
+       ) ctimer (
 		    .clk_i(clk_i),
 		    .rst_i(rst_i),
 

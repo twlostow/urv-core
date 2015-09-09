@@ -43,6 +43,7 @@ module rv_exec
 
    input 	     d_valid_i,
 
+   input 	     d_load_hazard_i,
    
    input [4:0] 	     d_opcode_i,
    input 	     d_shifter_sign_i,
@@ -75,6 +76,7 @@ module rv_exec
    output reg [31:0] f_branch_target_o,
    output 	     f_branch_take_o,
 
+   output 	     w_load_hazard_o,
 
    input 	     irq_i,
    
@@ -122,8 +124,8 @@ module rv_exec
 
    reg [31:0] 	 dm_addr, dm_data_s, dm_select_s;
 
-   wire [32:0] cmp_op1 = { d_is_signed_compare_i ? rs1[31] : 1'b0, rs1 };
-   wire [32:0] cmp_op2 = { d_is_signed_compare_i ? rs2[31] : 1'b0, rs2 };
+   wire [32:0] cmp_op1 = { d_is_signed_alu_op_i ? rs1[31] : 1'b0, rs1 };
+   wire [32:0] cmp_op2 = { d_is_signed_alu_op_i ? rs2[31] : 1'b0, rs2 };
 
    wire [32:0] cmp_rs = cmp_op1 - cmp_op2;
    
@@ -210,7 +212,7 @@ module rv_exec
    
    // branch condition decoding   
    always@*
-     case (d_fun_i)
+     case (d_fun_i) // synthesis parallel_case full_case
        `BRA_EQ: branch_condition_met <= cmp_equal;
        `BRA_NEQ: branch_condition_met <= ~cmp_equal;
        `BRA_GE: branch_condition_met <= ~cmp_lt | cmp_equal;
@@ -219,27 +221,26 @@ module rv_exec
        `BRA_LTU: branch_condition_met <= cmp_lt;
        default: branch_condition_met <= 0;
      endcase // case (d_fun_i)
+
+   // generate load/store address
+   always@*
+     dm_addr <=  d_imm_i + ( ( d_opcode_i == `OPC_JALR || d_opcode_i == `OPC_LOAD || d_opcode_i == `OPC_STORE) ? rs1 : d_pc_i );
    
    always@*
      if(d_is_eret_i )
        branch_target <= exception_address;
      else if ( exception )
        branch_target <= exception_vector;
-     else case (d_opcode_i)
-	    `OPC_JAL: branch_target <= d_pc_i + d_imm_i;
-	    `OPC_JALR: branch_target <= rs1 + d_imm_i;
-	    `OPC_BRANCH: branch_target <= d_pc_i + d_imm_i;
-	    default: branch_target<= 32'hx;
-	  endcase // case (d_opcode_i)
+     else 
+       branch_target <= dm_addr;
 
-   // decode ALU operands
+    // decode ALU operands
    always@*
      begin
 	alu_op1 <= d_use_op1_i ? d_alu_op1_i : rs1;
 	alu_op2 <= d_use_op2_i ? d_alu_op2_i : rs2;
      end
 	
-
    wire [32:0] alu_addsub_op1 = {d_is_signed_alu_op_i ? alu_op1[31] : 1'b0, alu_op1 };
    wire [32:0] alu_addsub_op2 = {d_is_signed_alu_op_i ? alu_op2[31] : 1'b0, alu_op2 };
    
@@ -250,7 +251,7 @@ module rv_exec
        alu_addsub_result <= alu_addsub_op1 + alu_addsub_op2;
      else
        alu_addsub_result <= alu_addsub_op1 - alu_addsub_op2;
-   
+
    
    // the ALU itself
    always@*
@@ -336,11 +337,6 @@ module rv_exec
        default: rd_value <= 32'hx;
      endcase // case (x_rd_source_i)
    
-   // generate load/store address
-   always@*
-     begin
-	dm_addr <=  rs1 + { {20{d_imm_i[11]}}, d_imm_i[11:0] };
-     end
 
    reg unaligned_addr;
    
@@ -430,6 +426,7 @@ module rv_exec
 	 w_load_o <= 0;
 	 w_store_o <= 0;
 	 w_valid_o <= 0;
+	 
       end else if (!x_stall_i) begin
 	 f_branch_target_o <= branch_target;
 	 f_branch_take <= branch_take && !x_kill_i && d_valid_i;
@@ -446,6 +443,7 @@ module rv_exec
 
    assign f_branch_take_o = f_branch_take;
    
+
    always@*
      if(f_branch_take)
        x_stall_req_o <= 0;
@@ -455,6 +453,7 @@ module rv_exec
        x_stall_req_o <= 1;
      else
        x_stall_req_o <= 0;
+
 
 endmodule
 	       

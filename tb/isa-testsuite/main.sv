@@ -49,6 +49,14 @@ module main;
       int f = $fopen(filename,"r");
       int     n, i;
 
+      if( f == 0)
+	begin
+	   $error("can't open: %s", filename);
+	   $stop;
+	end
+      
+      
+      
       while(!$feof(f))
         begin
            int addr, data;

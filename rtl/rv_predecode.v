@@ -148,18 +148,13 @@ module rv_decode
        end else
 	 load_hazard <= 0;
    
-   reg 	inserting_nop = 0;
-   reg load_hazard_d;
-
+   reg 	inserting_nop;
    
    always@(posedge clk_i)
      if(rst_i) begin
        inserting_nop <= 0;
-	load_hazard_d <= 0;
-	
      end else if (!d_stall_i)
       begin
-	  load_hazard_d <= load_hazard;
 
 	  if (inserting_nop)
 	    inserting_nop <= 0;
@@ -168,7 +163,6 @@ module rv_decode
        end
 
    assign d_stall_req_o = load_hazard && !inserting_nop;
-
 
    wire [4:0] f_rd = f_ir_i[11:7];
    
@@ -213,14 +207,12 @@ module rv_decode
        x_shifter_sign_o <= f_ir_i[30];
 
    wire[31:0] d_imm_i = { {21{ f_ir_i[31] }}, f_ir_i[30:25], f_ir_i[24:21], f_ir_i[20] };
-   wire[31:0] d_imm_s = { {21{ f_ir_i[31] }}, f_ir_i[30:25], f_ir_i[11:8], f_ir_i[7] };
-   wire[31:0] d_imm_b = { {20{ f_ir_i[31] }}, f_ir_i[7], f_ir_i[30:25], f_ir_i[11:8], 1'b0 };
-   wire[31:0] d_imm_u = { f_ir_i[31], f_ir_i[30:20], f_ir_i[19:12], 12'h000 };
-   wire[31:0] d_imm_j = { {12{f_ir_i[31]}}, 
-			      f_ir_i[19:12], 
-			      f_ir_i[20], f_ir_i[30:25], f_ir_i[24:21], 1'b0};
-
-   
+   wire [31:0] d_imm_s = { {21{ f_ir_i[31] }}, f_ir_i[30:25], f_ir_i[11:8], f_ir_i[7] };
+   wire [31:0] d_imm_b = { {20{ f_ir_i[31] }}, f_ir_i[7], f_ir_i[30:25], f_ir_i[11:8], 1'b0 };
+   wire [31:0] d_imm_u = { f_ir_i[31], f_ir_i[30:20], f_ir_i[19:12], 12'h000 };
+   wire [31:0] d_imm_j = { {12{f_ir_i[31]}}, 
+			   f_ir_i[19:12], 
+			   f_ir_i[20], f_ir_i[30:25], f_ir_i[24:21], 1'b0};
 
    
    reg [31:0] d_imm;
@@ -302,18 +294,42 @@ module rv_decode
 	  x_is_load_o <= ( d_opcode == `OPC_LOAD && !load_hazard) ? 1'b1 : 1'b0;
 	  x_is_store_o <= ( d_opcode == `OPC_STORE && !load_hazard) ? 1'b1 : 1'b0;
 	  
-	  x_is_signed_compare_o <= ( ( d_opcode == `OPC_BRANCH) && ( ( d_fun == `BRA_GE )|| (d_fun == `BRA_LT ) ) )
-	    || ( ( (d_opcode == `OPC_OP) || (d_opcode == `OPC_OP_IMM) ) && (d_fun == `FUNC_SLT ) );
-
 	  x_is_mul <= d_is_mul;
 	 
-	  
-	  
-	  x_is_add_o <= (d_opcode == `OPC_AUIPC) || (d_opcode == `OPC_JAL) ||
-			(d_opcode == `OPC_LUI) || (d_opcode == `OPC_JALR) ||
- (!((d_opcode == `OPC_OP && d_fun == `FUNC_ADD && f_ir_i[30]) || (d_fun == `FUNC_SLT) || (d_fun == `FUNC_SLTU)));
 
-	  x_is_signed_alu_op_o <= (d_fun == `FUNC_SLT);
+	  case (d_opcode)
+	    `OPC_BRANCH:
+	      x_is_signed_alu_op_o <= (d_fun == `BRA_GE || d_fun == `BRA_LT);
+	    default:
+	      x_is_signed_alu_op_o <= (d_fun == `FUNC_SLT);
+	  endcase // case (d_opcode)
+	  
+   
+	  
+
+	  case (d_opcode)
+	    `OPC_OP:
+	      x_is_add_o <= ~f_ir_i[30] && !(d_fun == `FUNC_SLT || d_fun == `FUNC_SLTU);
+	    `OPC_OP_IMM:
+	      x_is_add_o <= !(d_fun == `FUNC_SLT || d_fun == `FUNC_SLTU);
+	    `OPC_BRANCH:
+	      x_is_add_o <= 0;
+	    default:
+	      x_is_add_o <= 1;
+	  endcase // case (d_opcode)
+	  
+   
+	  
+//	    x_is
+// SUB instruction
+	  
+
+// ~ ( d_opcode == OPC_OP && 
+
+/*(d_opcode == `OPC_AUIPC) || (d_opcode == `OPC_JAL) ||
+			(d_opcode == `OPC_LUI) || (d_opcode == `OPC_JALR) ||
+ (!((d_opcode == `OPC_OP && d_fun == `FUNC_ADD && f_ir_i[30]) || (d_fun == `FUNC_SLT) || (d_fun == `FUNC_SLTU)));*/
+
 
 	  // all multiply/divide instructions except MUL
 	  x_is_undef_o <= (d_opcode == `OPC_OP && f_ir_i[25] && d_fun != 3'b000);

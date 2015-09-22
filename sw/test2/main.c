@@ -177,7 +177,7 @@ uint32_t sys_get_cycles()
 
 volatile int irq_counter = 0;
 
-void handle_trap()
+void irq_handler()
 {
     irq_counter++;
 }

@@ -133,7 +133,7 @@ begin  -- rtl
      DIVCLK_DIVIDE      => 1,
      CLKFBOUT_MULT      => 8,
      CLKFBOUT_PHASE     => 0.000,
-     CLKOUT0_DIVIDE     => 10,          -- 62.5 MHz
+     CLKOUT0_DIVIDE     => 7,          -- 62.5 MHz
      CLKOUT0_PHASE      => 0.000,
      CLKOUT0_DUTY_CYCLE => 0.500,
      CLKOUT1_DIVIDE     => 8,          -- not used

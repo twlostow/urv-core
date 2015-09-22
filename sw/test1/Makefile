@@ -7,9 +7,9 @@ OBJDUMP =	$(CROSS_COMPILE)objdump
 OBJCOPY =	$(CROSS_COMPILE)objcopy
 SIZE =		$(CROSS_COMPILE)size
 
-CFLAGS = -m32
-OBJS = test.S
-LDS = ../ram.ld
+CFLAGS = -m32 -DSIM -I../common -march=RV32I -O2
+OBJS = test.o ../common/crt0.o ../common/irq.o ../common/emulate.o ../common/uart.o ../common/printf.o ../common/vsprintf-xint.o
+LDS = ../common/ram2.ld
 OUTPUT=test1
 
 $(OUTPUT): $(LDS) $(OBJS)

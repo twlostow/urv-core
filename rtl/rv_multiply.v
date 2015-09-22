@@ -2,6 +2,10 @@
 
 `timescale 1ns/1ps
 
+`define ARCH_VIRTEX6
+
+   `ifdef ARCH_SPARTAN6
+
 module rv_mult18x18
   (
    input 	 clk_i,
@@ -63,7 +67,30 @@ module rv_mult18x18
 );
 
 endmodule // rv_mult18x18
+   `endif //  `i
+// fdef ARCH_SPARTAN6
 
+`ifdef ARCH_VIRTEX6
+module rv_mult18x18
+  (
+   input 	 clk_i,
+   input 	 rst_i,
+   
+   input 	 stall_i,
+   
+   input [17:0]  x_i,
+   input [17:0]  y_i,
+
+   output reg [35:0] q_o
+   );
+
+
+   always@(posedge clk_i)
+     if(!stall_i)
+       q_o <= x_i * y_i;
+   
+endmodule // rv_mult18x18
+`endif //  `ifdef ARCH_VIRTEX6
 
 
 

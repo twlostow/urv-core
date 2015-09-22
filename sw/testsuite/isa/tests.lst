@@ -1,4 +1,3 @@
-../benchmarks/dhrystone/dhrystone.ram
 rv32ui-p-csr.ram
 rv32ui-p-addi.ram
 rv32ui-p-add.ram

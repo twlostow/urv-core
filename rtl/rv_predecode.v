@@ -318,18 +318,6 @@ module rv_decode
 	      x_is_add_o <= 1;
 	  endcase // case (d_opcode)
 	  
-   
-	  
-//	    x_is
-// SUB instruction
-	  
-
-// ~ ( d_opcode == OPC_OP && 
-
-/*(d_opcode == `OPC_AUIPC) || (d_opcode == `OPC_JAL) ||
-			(d_opcode == `OPC_LUI) || (d_opcode == `OPC_JALR) ||
- (!((d_opcode == `OPC_OP && d_fun == `FUNC_ADD && f_ir_i[30]) || (d_fun == `FUNC_SLT) || (d_fun == `FUNC_SLTU)));*/
-
 
 	  // all multiply/divide instructions except MUL
 	  x_is_undef_o <= (d_opcode == `OPC_OP && f_ir_i[25] && d_fun != 3'b000);

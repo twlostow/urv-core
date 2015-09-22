@@ -63,7 +63,7 @@ module rv_csr
 
   
    always@*
-     case(d_csr_sel_i)
+     case(d_csr_sel_i) // synthesis full_case parallel_case
        `CSR_ID_CYCLESL: csr_in1 <= csr_cycles_i[31:0];
        `CSR_ID_CYCLESH: csr_in1 <= { 24'h0, csr_cycles_i[39:32] };
        `CSR_ID_TIMEL: csr_in1 <= csr_time_i[31:0];
@@ -100,7 +100,7 @@ module rv_csr
 	begin
 
 	   always@*
-	     case(d_fun_i)
+	     case(d_fun_i) // synthesis full_case parallel_case
 	       `CSR_OP_CSRRWI, 
 	       `CSR_OP_CSRRW:
 		 csr_out[i] <= csr_in2[i];

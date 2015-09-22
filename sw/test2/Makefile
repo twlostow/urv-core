@@ -8,7 +8,7 @@ OBJCOPY =	$(CROSS_COMPILE)objcopy
 SIZE =		$(CROSS_COMPILE)size
 
 CFLAGS = -g -m32 -msoft-float -march=RV32I -O2
-OBJS = ../common/crt0.o ../common/irq.o main.o
+OBJS = ../common/crt0.o ../common/irq.o main.o ../common/uart.o ../common/vsprintf-xint.o ../common/printf.o
 LDS = ../common/ram2.ld
 OUTPUT=test2
 

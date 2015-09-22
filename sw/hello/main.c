@@ -55,15 +55,16 @@ main()
 
     int i;
 
-    for(i=0;i<100;i++)
+/*    for(i=0;i<100;i++)
     {
 	float f = 2*3.14*(float)i / 100.0;
 	int y = (int) (1000.0 *sin(f));
 	pp_printf("%d %d\n", i, y);
-    }
+    }*/
 
-//    coremark_main(argc, argv);
+    pp_printf("Starting CoreMark 1.0\n");
 
+    coremark_main(argc, argv);
 
     for(;;);
 

@@ -1,76 +1,14 @@
-  .section    .boot, "ax", @progbits
+.text
 
- .global _start
-_start:
+.global main2
+main2:
 
+    li t0, 1000
+    li t1, 7
+    
+    div t2,t0,t1
+    li t0,2000
+    divu t2,t0,t1
 
-    la a5, lab1
-    lw a5, 0(a5)
-    jr a5
-
-    forever:
-	j forever    
-
-
-lab1:
-    .word continue
-
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-
-
-continue:
-
-    nop
-    j continue
-
-
-/*	sw x5,-16(x1)
-
-
-	nop
-	nop
-
-	lw x31, -16(x1)
-	la x30, 0x1235
-	beq x30, x31, pass1
-
-fail1:
-	nop
-	j fail1
-
-pass1:
-
-	lw x20,-8(x1) // x20 = 0xffec
-	lw x20,0(x20) // x20 = 0x1235
-	addi x20,x20,1
-	sw x20,-20(x1)	
-*/
-
-/*	
-	slli t0, t0, 0x1
-	sw t0,-4(sp)
-	slli t0, t0, 0x1
-	sw t0,-8(sp)
-
-	la t0, 0xffffffa0
-	srli t0, t0, 0x1
-	sw t0,-4(sp)
-	srli t0, t0, 0x1
-	sw t0,-8(sp)
-	
-*/
+forever:
+    j forever

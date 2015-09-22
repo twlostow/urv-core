@@ -1,5 +1,5 @@
 # and don't touch the rest unless you know what you're doing.
-CROSS_COMPILE ?= /opt/gcc-riscv/bin/riscv64-unknown-elf-
+CROSS_COMPILE ?= /opt/gcc-riscv-5.2.0/bin/riscv64-unknown-elf-
 
 CC =		$(CROSS_COMPILE)gcc
 LD =		$(CROSS_COMPILE)ld
@@ -7,13 +7,19 @@ OBJDUMP =	$(CROSS_COMPILE)objdump
 OBJCOPY =	$(CROSS_COMPILE)objcopy
 SIZE =		$(CROSS_COMPILE)size
 
-CFLAGS = -g -O2 -m32 -msoft-float -march=RV32I  -I. -I../common -DSIM
-OBJS = ../common/crtuser.o main.o ../common/uart.o ../common/printf.o ../common/vsprintf-xint.o
-LDS = ../common/ram2.ld
+ARCH = RV32IM
+
+CFLAGS = -g  -m32  -O2  -msoft-float -march=$(ARCH)  -I. -I../common -ffunction-sections -fdata-sections -DFLAGS_STR="\"\"" -I../coremark_v1.0/barebones -I../coremark_v1.0
+OBJS = ../common/crtuser.o main.o ../common/uart.o ../common/printf.o ../common/vsprintf-xint.o \
+../coremark_v1.0/core_list_join.o  ../coremark_v1.0/core_matrix.o  ../coremark_v1.0/core_state.o  ../coremark_v1.0/barebones/cvt.o \
+../coremark_v1.0/core_main.o ../coremark_v1.0/barebones/core_portme.o ../coremark_v1.0/core_util.o ../coremark_v1.0/barebones/ee_printf.o ../coremark_v1.0/fmod.o
+
+LDS = ../common/user.ld
 OUTPUT=hello
 
+
 $(OUTPUT): $(LDS) $(OBJS)
-	${CC} -g -m32 -msoft-float  -march=RV32I -o $(OUTPUT).elf -nostartfiles $(OBJS)  -lm -L../coremark_v1.0 -lcoremark -T $(LDS)
+	${CC} -m32 -flto -Wl,--gc-sections -g  -msoft-float  -march=$(ARCH) -o $(OUTPUT).elf -nostartfiles $(OBJS)  -lm -T $(LDS) -lc
 	${OBJCOPY} -O binary $(OUTPUT).elf $(OUTPUT).bin
 	${OBJDUMP} -D $(OUTPUT).elf > disasm.S
 	../genraminit $(OUTPUT).bin 16384 > $(OUTPUT).ram
@@ -24,4 +30,4 @@ clean:
 	rm -f $(OUTPUT).elf $(OUTPUT).bin $(OBJS)
 
 %.o:	%.S
-	${CC} -c -m32 $^ -o $@
+	${CC} -c -m32 -march=RV32IM $^ -o $@

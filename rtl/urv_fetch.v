@@ -1,7 +1,8 @@
 /*
- 
+
  uRV - a tiny and dumb RISC-V core
- Copyright (c) 2015 twl <twlostow@printf.cc>.
+ Copyright (c) 2015 CERN
+ Author: Tomasz Włostowski <tomasz.wlostowski@cern.ch>
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -20,23 +21,22 @@
 
 `timescale 1ns/1ps
 
-module rv_fetch 
+module urv_fetch 
 (
  input 		   clk_i,
  input 		   rst_i,
+
+ input 		   f_stall_i,
+ input 		   f_kill_i,
  
  output [31:0] 	   im_addr_o,
  input [31:0] 	   im_data_i,
  input 		   im_valid_i,
 
- input 		   f_stall_i,
- input 		   f_kill_i,
-
+ output reg 	   f_valid_o,
  output [31:0] 	   f_ir_o,
  output reg [31:0] f_pc_o,
  output reg [31:0] f_pc_plus_4_o,
- 
- output reg 	   f_valid_o,
   
  input [31:0] 	   x_pc_bra_i,
  input 		   x_bra_i
@@ -93,7 +93,7 @@ module rv_fetch
 	end 
      end // else: !if(rst_i)
 
+endmodule // urv_fetch
 
-endmodule
  
   

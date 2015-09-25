@@ -24,12 +24,12 @@ use ieee.numeric_std.all;
 use work.wishbone_pkg.all;
 use work.genram_pkg.all;
 
-entity xrv_core is
+entity xurv_core is
   generic (
-    g_internal_ram_size      : integer               := 65536;
-    g_internal_ram_init_file : string                := "";
-    g_simulation : boolean := false;
-    g_address_bits           : integer               := 32
+    g_internal_ram_size      : integer := 65536;
+    g_internal_ram_init_file : string  := "";
+    g_simulation             : boolean := false;
+    g_address_bits           : integer := 32
     );
 
   port (
@@ -47,65 +47,65 @@ entity xrv_core is
     host_slave_i : in  t_wishbone_slave_in := cc_dummy_slave_in;
     host_slave_o : out t_wishbone_slave_out
     );
-end xrv_core;
+end xurv_core;
 
-architecture wrapper of xrv_core is
+architecture wrapper of xurv_core is
 
   constant c_mem_address_bits : integer := f_ceil_log2(g_internal_ram_size / 4);
-  
-  component rv_cpu is
+
+  component urv_cpu is
     port(
       clk_i : in std_logic;
       rst_i : in std_logic;
-		
-		irq_i : in std_logic;
+
+      irq_i : in std_logic;
 
       im_addr_o  : out std_logic_vector(31 downto 0);
       im_data_i  : in  std_logic_vector(31 downto 0);
       im_valid_i : in  std_logic;
 
-      dm_addr_o       : out std_logic_vector(31 downto 0);
-      dm_data_s_o     : out std_logic_vector(31 downto 0);
-      dm_data_l_i     : in  std_logic_vector(31 downto 0);
+      dm_addr_o        : out std_logic_vector(31 downto 0);
+      dm_data_s_o      : out std_logic_vector(31 downto 0);
+      dm_data_l_i      : in  std_logic_vector(31 downto 0);
       dm_data_select_o : out std_logic_vector(3 downto 0);
-      dm_ready_i      : in  std_logic;
-      dm_store_o      : out std_logic;
-      dm_load_o       : out std_logic;
-      dm_load_done_i  : in  std_logic;
-      dm_store_done_i : in  std_logic
+      dm_ready_i       : in  std_logic;
+      dm_store_o       : out std_logic;
+      dm_load_o        : out std_logic;
+      dm_load_done_i   : in  std_logic;
+      dm_store_done_i  : in  std_logic
       );
   end component;
 
   component urv_iram
     generic (
-       g_size : integer;
-       g_init_file : string;
-       g_simulation : boolean
-    ); 
-   port (
-     clk_i : in std_logic;
+      g_size       : integer;
+      g_init_file  : string;
+      g_simulation : boolean
+      ); 
+    port (
+      clk_i : in std_logic;
 
-     ena_i : in std_logic;
-     wea_i : in std_logic;
-     aa_i : in std_logic_vector(31 downto 0);
-     bwea_i : in std_logic_vector(3 downto 0);
-     da_i : in std_logic_vector(31 downto 0);
-     qa_o :out std_logic_vector(31 downto 0);
-     enb_i : in std_logic;
-     web_i : in std_logic;
-     ab_i : in std_logic_vector(31 downto 0);
-     bweb_i : in std_logic_vector(3 downto 0);
-     db_i : in std_logic_vector(31 downto 0);
-     qb_o :out std_logic_vector(31 downto 0)
-    );
-    end component;
+      ena_i  : in  std_logic;
+      wea_i  : in  std_logic;
+      aa_i   : in  std_logic_vector(31 downto 0);
+      bwea_i : in  std_logic_vector(3 downto 0);
+      da_i   : in  std_logic_vector(31 downto 0);
+      qa_o   : out std_logic_vector(31 downto 0);
+      enb_i  : in  std_logic;
+      web_i  : in  std_logic;
+      ab_i   : in  std_logic_vector(31 downto 0);
+      bweb_i : in  std_logic_vector(3 downto 0);
+      db_i   : in  std_logic_vector(31 downto 0);
+      qb_o   : out std_logic_vector(31 downto 0)
+      );
+  end component;
 
-  
 
-  signal cpu_rst, cpu_rst_d  : std_logic;
-  signal im_addr  : std_logic_vector(31 downto 0);
-  signal im_data  : std_logic_vector(31 downto 0);
-  signal im_valid : std_logic;
+
+  signal cpu_rst, cpu_rst_d : std_logic;
+  signal im_addr            : std_logic_vector(31 downto 0);
+  signal im_data            : std_logic_vector(31 downto 0);
+  signal im_valid           : std_logic;
 
   signal ha_im_addr                                : std_logic_vector(g_address_bits-1 downto 0);
   signal ha_im_wdata, ha_im_rdata                  : std_logic_vector(31 downto 0);
@@ -121,7 +121,7 @@ architecture wrapper of xrv_core is
 
   signal dm_mem_rdata, dm_wb_rdata : std_logic_vector(31 downto 0);
   signal dm_wb_write, dm_select_wb : std_logic;
-  signal dm_data_write : std_logic;
+  signal dm_data_write             : std_logic;
   
 begin
 
@@ -155,7 +155,7 @@ begin
   end process;
 
 --  dm_is_wishbone <= '1' when unsigned(dm_addr(20g_address_bits-1 downto 0)) >= g_wishbone_start else '0';
-  dm_is_wishbone <=  dm_addr(31);
+  dm_is_wishbone <= dm_addr(31);
 
   -- Wishbone bus arbitration / internal RAM access
   process(clk_sys_i)
@@ -232,42 +232,42 @@ begin
   im_addr_muxed <= ha_im_addr  when ha_im_access = '1' else im_addr(g_address_bits-1 downto 0);
   dm_ready      <= '1';
 
-  cpu_core : rv_cpu
+  cpu_core : urv_cpu
     port map (
-      clk_i           => clk_sys_i,
-      rst_i           => cpu_rst,
-      irq_i => '0',
-      im_addr_o       => im_addr,
-      im_data_i       => im_data,
-      im_valid_i      => im_valid,
-      dm_addr_o       => dm_addr,
-      dm_data_s_o     => dm_data_s,
-      dm_data_l_i     => dm_data_l,
+      clk_i            => clk_sys_i,
+      rst_i            => cpu_rst,
+      irq_i            => '0',
+      im_addr_o        => im_addr,
+      im_data_i        => im_data,
+      im_valid_i       => im_valid,
+      dm_addr_o        => dm_addr,
+      dm_data_s_o      => dm_data_s,
+      dm_data_l_i      => dm_data_l,
       dm_data_select_o => dm_data_select,
-      dm_ready_i      => dm_ready,
-      dm_store_o      => dm_store,
-      dm_load_o       => dm_load,
-      dm_load_done_i  => dm_load_done,
-      dm_store_done_i => dm_store_done);
+      dm_ready_i       => dm_ready,
+      dm_store_o       => dm_store,
+      dm_load_o        => dm_load,
+      dm_load_done_i   => dm_load_done,
+      dm_store_done_i  => dm_store_done);
 
   dm_data_write <= not dm_is_wishbone and dm_store;
 
   U_iram : urv_iram
     generic map (
-      g_size                     => g_internal_ram_size,
-      g_init_file                => g_internal_ram_init_file,
+      g_size       => g_internal_ram_size,
+      g_init_file  => g_internal_ram_init_file,
       g_simulation => g_simulation)
     port map (
-      clk_i  => clk_sys_i,
+      clk_i => clk_sys_i,
 
-      ena_i => '1',
-      wea_i => '0',
+      ena_i  => '1',
+      wea_i  => '0',
       bwea_i => "0000",
-      aa_i  => im_addr_muxed,
-      da_i  => ha_im_wdata,
-      qa_o  => im_data,
+      aa_i   => im_addr_muxed,
+      da_i   => ha_im_wdata,
+      qa_o   => im_data,
 
-      enb_i => '1',
+      enb_i  => '1',
       bweb_i => dm_data_select,
       web_i  => dm_data_write,
       ab_i   => dm_addr,
@@ -279,15 +279,15 @@ begin
   begin
     if rising_edge(clk_sys_i) then
       if(cpu_rst = '1') then
-        im_valid <= '0';
+        im_valid  <= '0';
         cpu_rst_d <= '1';
       else
         cpu_rst_d <= cpu_rst;
-        im_valid <= not ha_im_access and (not cpu_rst_d);
+        im_valid  <= not ha_im_access and (not cpu_rst_d);
       end if;
     end if;
   end process;
-        
+
 
   host_slave_o.stall <= '0';
   host_slave_o.err   <= '0';

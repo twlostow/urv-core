@@ -1,7 +1,8 @@
 /*
- 
+
  uRV - a tiny and dumb RISC-V core
- Copyright (c) 2015 twl <twlostow@printf.cc>.
+ Copyright (c) 2015 CERN
+ Author: Tomasz Włostowski <tomasz.wlostowski@cern.ch>
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -18,11 +19,11 @@
  
 */
 
-`include "rv_defs.v"
+`include "urv_defs.v"
 
 `timescale 1ns/1ps
 
-module rv_exec
+module urv_exec
   (
    input 	     clk_i,
    input 	     rst_i,
@@ -124,28 +125,24 @@ module rv_exec
 
    reg [31:0] 	 dm_addr, dm_data_s, dm_select_s;
 
-   wire [32:0] cmp_op1 = { d_is_signed_alu_op_i ? rs1[31] : 1'b0, rs1 };
-   wire [32:0] cmp_op2 = { d_is_signed_alu_op_i ? rs2[31] : 1'b0, rs2 };
+   // Comparator
+   wire [32:0] 	 cmp_op1 = { d_is_signed_alu_op_i ? rs1[31] : 1'b0, rs1 };
+   wire [32:0] 	 cmp_op2 = { d_is_signed_alu_op_i ? rs2[31] : 1'b0, rs2 };
+   wire [32:0] 	 cmp_rs = cmp_op1 - cmp_op2;
+   wire 	 cmp_equal = (cmp_op1 == cmp_op2);
+   wire 	 cmp_lt = cmp_rs[32];
 
-   wire [32:0] cmp_rs = cmp_op1 - cmp_op2;
+   reg 		 f_branch_take;
    
-   wire        cmp_equal = (cmp_op1 == cmp_op2);
-   wire        cmp_lt = cmp_rs[32];
+   wire [31:0] 	 rd_csr;
+   wire [31:0] 	 rd_div;
 
-   reg 	       f_branch_take;
+   wire 	 exception;
+   wire [31:0] 	 csr_mie, csr_mip, csr_mepc, csr_mstatus,csr_mcause;
+   wire [31:0] 	 csr_write_value;
+   wire [31:0] 	 exception_address, exception_vector;
    
-   wire [31:0] rd_shifter;
-   wire [31:0] rd_csr;
-   wire [31:0] rd_mul;
-   wire [31:0] rd_div;
-
-   wire        exception;
-   wire [31:0] csr_mie, csr_mip, csr_mepc, csr_mstatus,csr_mcause;
-   wire [31:0] csr_write_value;
-   wire [31:0] exception_address, exception_vector;
-   
-   
-   rv_csr csr_regs
+   urv_csr csr_regs
      (
       
       .clk_i(clk_i),
@@ -174,7 +171,7 @@ module rv_exec
       .csr_mcause_i(csr_mcause)
       );
 
-   rv_exceptions exception_unit 
+   urv_exceptions exception_unit 
      (
       .clk_i(clk_i),
       .rst_i(rst_i),
@@ -225,7 +222,8 @@ module rv_exec
    // generate load/store address
    always@*
      dm_addr <=  d_imm_i + ( ( d_opcode_i == `OPC_JALR || d_opcode_i == `OPC_LOAD || d_opcode_i == `OPC_STORE) ? rs1 : d_pc_i );
-   
+
+   // calculate branch target address   
    always@*
      if(d_is_eret_i )
        branch_target <= exception_address;
@@ -234,16 +232,17 @@ module rv_exec
      else 
        branch_target <= dm_addr;
 
-    // decode ALU operands
+   // decode ALU operands
    always@*
      begin
 	alu_op1 <= d_use_op1_i ? d_alu_op1_i : rs1;
 	alu_op2 <= d_use_op2_i ? d_alu_op2_i : rs2;
      end
 	
+
+   // ALU adder/subtractor
    wire [32:0] alu_addsub_op1 = {d_is_signed_alu_op_i ? alu_op1[31] : 1'b0, alu_op1 };
    wire [32:0] alu_addsub_op2 = {d_is_signed_alu_op_i ? alu_op2[31] : 1'b0, alu_op2 };
-   
    reg [32:0]  alu_addsub_result;
 
    always@*
@@ -253,7 +252,7 @@ module rv_exec
        alu_addsub_result <= alu_addsub_op1 - alu_addsub_op2;
 
    
-   // the ALU itself
+   // the rest of the ALU
    always@*
      begin
 	case (d_fun_i)
@@ -273,8 +272,8 @@ module rv_exec
 	endcase // case (d_fun_i)
      end // always@ *
 
-   
-   rv_shifter shifter 
+   // barel shifter
+   urv_shifter shifter 
      (
       .clk_i(clk_i),
       .rst_i(rst_i),
@@ -288,26 +287,26 @@ module rv_exec
       .d_is_shift_i(d_is_shift_i),
 
       .w_rd_o(w_rd_shifter_o)
-     );
+      );
 
-      wire divider_stall_req = 0;
+   wire divider_stall_req = 0;
 
-  rv_multiply multiplier 
-    (
-     .clk_i(clk_i),
-     .rst_i(rst_i),
-     .x_stall_i(x_stall_i),
-   
-     .d_rs1_i(rs1),
-     .d_rs2_i(rs2),
-     .d_fun_i(d_fun),
-     .w_rd_o (w_rd_multiply_o)
-   );
+   urv_multiply multiplier 
+     (
+      .clk_i(clk_i),
+      .rst_i(rst_i),
+      .x_stall_i(x_stall_i),
+      
+      .d_rs1_i(rs1),
+      .d_rs2_i(rs2),
+      .d_fun_i(d_fun),
+      .w_rd_o (w_rd_multiply_o)
+      );
 
 /*   wire divider_stall_req;
    wire [31:0] rd_divide;
    
-   rv_divide divider
+   urv_divide divider
      (
       .clk_i(clk_i),
       .rst_i(rst_i),
@@ -415,47 +414,53 @@ module rv_exec
    assign dm_data_s_o = dm_data_s;
    assign dm_data_select_o = dm_select_s;
 
-
    assign dm_load_o =  d_is_load_i & d_valid_i & !x_kill_i & !x_stall_i & !exception;
    assign dm_store_o = d_is_store_i & d_valid_i & !x_kill_i & !x_stall_i & !exception;
    
-   
+
+   // X/W pipeline registers
    always@(posedge clk_i) 
-      if (rst_i) begin
-	 f_branch_take   <= 0;
-	 w_load_o <= 0;
-	 w_store_o <= 0;
-	 w_valid_o <= 0;
-	 
-      end else if (!x_stall_i) begin
-	 f_branch_target_o <= branch_target;
-	 f_branch_take <= branch_take && !x_kill_i && d_valid_i;
-	 w_rd_o <= d_rd_i;
-	 w_rd_value_o <= rd_value;
-	 w_rd_write_o <= d_rd_write_i && !x_kill_i && d_valid_i && !exception;
-	 w_rd_source_o <= d_rd_source_i;
-	 w_fun_o <= d_fun_i;
-	 w_load_o <= d_is_load_i && !x_kill_i && d_valid_i && !exception;
-	 w_store_o <= d_is_store_i && !x_kill_i && d_valid_i && !exception;
-	 w_dm_addr_o <= dm_addr;
-	 w_valid_o <= !exception; 
-      end // else: !if(rst_i)
+     if (rst_i) begin
+	f_branch_take   <= 0;
+	w_load_o <= 0;
+	w_store_o <= 0;
+	w_valid_o <= 0;
+	
+     end else if (!x_stall_i) begin
+	f_branch_target_o <= branch_target;
+	f_branch_take <= branch_take && !x_kill_i && d_valid_i;
+	w_rd_o <= d_rd_i;
+	w_rd_value_o <= rd_value;
+
+	w_rd_write_o <= d_rd_write_i && !x_kill_i && d_valid_i && !exception;
+	w_load_o <= d_is_load_i && !x_kill_i && d_valid_i && !exception;
+	w_store_o <= d_is_store_i && !x_kill_i && d_valid_i && !exception;
+
+	w_rd_source_o <= d_rd_source_i;
+	w_fun_o <= d_fun_i;
+	w_dm_addr_o <= dm_addr;
+	w_valid_o <= !exception; 
+     end // else: !if(rst_i)
 
    assign f_branch_take_o = f_branch_take;
    
 
+   // pipeline control: generate stall request signal
    always@*
+   // never stall on taken branch
      if(f_branch_take)
        x_stall_req_o <= 0;
      else if(divider_stall_req)
        x_stall_req_o <= 1;
+   // stall if memory request pending, but memory not ready
      else if ((d_is_load_i || d_is_store_i) && d_valid_i && !x_kill_i && !dm_ready_i)
        x_stall_req_o <= 1;
      else
        x_stall_req_o <= 0;
 
 
-endmodule
+endmodule // urv_exec
+
 	       
    
    

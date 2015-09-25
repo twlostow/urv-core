@@ -1,7 +1,8 @@
 /*
- 
+
  uRV - a tiny and dumb RISC-V core
- Copyright (c) 2015 twl <twlostow@printf.cc>.
+ Copyright (c) 2015 CERN
+ Author: Tomasz Włostowski <tomasz.wlostowski@cern.ch>
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -17,6 +18,8 @@
  License along with this library.
  
 */
+
+`include "urv_config.v"
 
 `define OPC_OP_IMM 5'b00100
 `define OPC_LUI 5'b01101

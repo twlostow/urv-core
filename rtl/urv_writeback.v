@@ -1,7 +1,8 @@
 /*
- 
+
  uRV - a tiny and dumb RISC-V core
- Copyright (c) 2015 twl <twlostow@printf.cc>.
+ Copyright (c) 2015 CERN
+ Author: Tomasz Włostowski <tomasz.wlostowski@cern.ch>
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -18,17 +19,16 @@
  
 */
 
-`include "rv_defs.v"
+`include "urv_defs.v"
 
 `timescale 1ns/1ps
 
-module rv_writeback
+module urv_writeback
   (
    input 	     clk_i,
    input 	     rst_i,
 
    input 	     w_stall_i,
-
    output 	     w_stall_req_o,
    
    input [2:0] 	     x_fun_i,
@@ -52,19 +52,13 @@ module rv_writeback
    input 	     dm_load_done_i,
    input 	     dm_store_done_i,
    
-   output [31:0] rf_rd_value_o,
+   output [31:0]     rf_rd_value_o,
    output [4:0]      rf_rd_o,
-   output  	     rf_rd_write_o,
-
-
-   
-   output [31:0]     TRIG2
+   output 	     rf_rd_write_o
    );
 
    reg [31:0] 	 load_value;
 
-   
-   
    // generate load value
    always@*
      begin
@@ -109,8 +103,7 @@ module rv_writeback
 
    reg rf_rd_write;
    reg [31:0] rf_rd_value;
-   
-   
+      
    always@*
      if( x_load_i )
        rf_rd_value <= load_value;
@@ -139,10 +132,4 @@ module rv_writeback
    assign rf_rd_o = x_rd_i;
    assign w_stall_req_o = x_valid_i && ((x_load_i && !dm_load_done_i) || (x_store_i && !dm_store_done_i));
 
-   assign TRIG2[6] = x_load_i;
-   assign TRIG2[8] = dm_load_done_i;
-   assign TRIG2[9] = x_store_i;
-   assign TRIG2[11] = dm_store_done_i;
-   assign TRIG2[15] = w_stall_req_o;
-
-endmodule // rv_writeback
+endmodule // urv_writeback

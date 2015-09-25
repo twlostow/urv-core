@@ -1,7 +1,8 @@
 /*
- 
+
  uRV - a tiny and dumb RISC-V core
- Copyright (c) 2015 twl <twlostow@printf.cc>.
+ Copyright (c) 2015 CERN
+ Author: Tomasz Włostowski <tomasz.wlostowski@cern.ch>
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -18,11 +19,11 @@
  
 */
 
-`include "rv_defs.v"
+`include "urv_defs.v"
 
 `timescale 1ns/1ps
 
-module rv_csr
+module urv_csr
   (
    input 	     clk_i,
    input 	     rst_i,

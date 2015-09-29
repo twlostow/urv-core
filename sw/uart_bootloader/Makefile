@@ -10,8 +10,10 @@ SIZE =		$(CROSS_COMPILE)size
 SYN_DIR=../../syn/spec
 SYN_TOP_LEVEL=spec_top
 
+# keep RV32I: the bootloader also emulates DIV/MULH instuctions
+
 CFLAGS = -g -O2 -m32 -msoft-float -march=RV32I -I. -I../common -ffunction-sections -fdata-sections
-OBJS = crt0.o  boot.o ../common/uart.o ../common/emulate.o ../common/irq.o
+OBJS = crtboot.o  boot.o ../common/uart.o ../common/emulate.o ../common/irq.o
 LDS = boot.ld
 OUTPUT=uart-bootloader
 
@@ -22,7 +24,6 @@ $(OUTPUT): $(LDS) $(OBJS)
 	$(SIZE) $(OUTPUT).elf
 	../genraminit $(OUTPUT).bin 512 0 0 > $(OUTPUT).ram
 	../genmeminit $(OUTPUT).bin 512 0 0 > $(OUTPUT).mem
-#	../genraminit $(OUTPUT).bin 512 63488 15872 >> uart-bootloader.ram
 
 clean:
 	rm -f $(OUTPUT).elf $(OUTPUT).bin $(OBJS)

@@ -7,9 +7,6 @@
  .global _start
 _start:
     j _entry
-_trap:
-    j handle_trap
-
 
 _entry:
 	nop

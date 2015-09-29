@@ -1,0 +1,482 @@
+diff -rupN coremark-orig/barebones/core_portme.c coremark_v1.0/barebones/core_portme.c
+--- coremark-orig/barebones/core_portme.c	2009-06-05 19:38:38.000000000 +0200
++++ coremark_v1.0/barebones/core_portme.c	2015-09-29 19:41:17.684577457 +0200
+@@ -8,6 +8,8 @@
+ #include "coremark.h"
+ #include "core_portme.h"
+ 
++#include <stdint.h>
++
+ #if VALIDATION_RUN
+ 	volatile ee_s32 seed1_volatile=0x3415;
+ 	volatile ee_s32 seed2_volatile=0x3415;
+@@ -30,8 +32,11 @@
+ 	e.g. Read value from on board RTC, read value from cpu clock cycles performance counter etc. 
+ 	Sample implementation for standard time.h and windows.h definitions included.
+ */
++
++uint32_t sys_get_ticks();
++
+ CORETIMETYPE barebones_clock() {
+-	#error "You must implement a method to measure time in barebones_clock()! This function should return current time.\n"
++	return sys_get_ticks();
+ }
+ /* Define : TIMER_RES_DIVIDER
+ 	Divider to trade off timer resolution and total time that can be measured.
+@@ -98,7 +103,6 @@ ee_u32 default_num_contexts=1;
+ */
+ void portable_init(core_portable *p, int *argc, char *argv[])
+ {
+-	#error "Call board initialization routines in portable init (if needed), in particular initialize UART!\n"
+ 	if (sizeof(ee_ptr_int) != sizeof(ee_u8 *)) {
+ 		ee_printf("ERROR! Please define ee_ptr_int to a type that holds a pointer!\n");
+ 	}
+diff -rupN coremark-orig/barebones/core_portme.h coremark_v1.0/barebones/core_portme.h
+--- coremark-orig/barebones/core_portme.h	2009-08-25 20:01:01.000000000 +0200
++++ coremark_v1.0/barebones/core_portme.h	2015-09-29 19:45:48.804572602 +0200
+@@ -9,6 +9,13 @@
+ */
+ #ifndef CORE_PORTME_H
+ #define CORE_PORTME_H
++
++#define CLOCKS_PER_SEC 1000
++#define ITERATIONS 3000
++
++#include <stdio.h>
++#include <stdint.h>
++
+ /************************/
+ /* Data types and settings */
+ /************************/
+@@ -16,27 +23,27 @@
+ 	Define to 1 if the platform supports floating point.
+ */
+ #ifndef HAS_FLOAT 
+-#define HAS_FLOAT 1
++#define HAS_FLOAT 0
+ #endif
+ /* Configuration : HAS_TIME_H
+ 	Define to 1 if platform has the time.h header file,
+ 	and implementation of functions thereof.
+ */
+ #ifndef HAS_TIME_H
+-#define HAS_TIME_H 1
++#define HAS_TIME_H 0
+ #endif
+ /* Configuration : USE_CLOCK
+ 	Define to 1 if platform has the time.h header file,
+ 	and implementation of functions thereof.
+ */
+ #ifndef USE_CLOCK
+-#define USE_CLOCK 1
++#define USE_CLOCK 0
+ #endif
+ /* Configuration : HAS_STDIO
+ 	Define to 1 if the platform has stdio.h.
+ */
+ #ifndef HAS_STDIO
+-#define HAS_STDIO 0
++#define HAS_STDIO 1
+ #endif
+ /* Configuration : HAS_PRINTF
+ 	Define to 1 if the platform has stdio.h and implements the printf function.
+Binary files coremark-orig/barebones/core_portme.o and coremark_v1.0/barebones/core_portme.o differ
+Binary files coremark-orig/barebones/cvt.o and coremark_v1.0/barebones/cvt.o differ
+diff -rupN coremark-orig/barebones/ee_printf.c coremark_v1.0/barebones/ee_printf.c
+--- coremark-orig/barebones/ee_printf.c	2009-08-25 20:02:52.000000000 +0200
++++ coremark_v1.0/barebones/ee_printf.c	2015-09-29 19:41:40.196577054 +0200
+@@ -577,20 +577,10 @@ repeat:
+   return str - buf;
+ }
+ 
++extern void uart_write_byte(char c);
++
+ void uart_send_char(char c) {
+-#error "You must implement the method uart_send_char to use this file!\n";
+-/*	Output of a char to a UART usually follows the following model:
+-	Wait until UART is ready
+-	Write char to UART
+-	Wait until UART is done
+-	
+-	Or in code:
+-	while (*UART_CONTROL_ADDRESS != UART_READY);
+-	*UART_DATA_ADDRESS = c;
+-	while (*UART_CONTROL_ADDRESS != UART_READY);
+-	
+-	Check the UART sample code on your platform or the board documentation.
+-*/
++    uart_write_byte(c);
+ }
+ 
+ int ee_printf(const char *fmt, ...)
+Binary files coremark-orig/barebones/ee_printf.o and coremark_v1.0/barebones/ee_printf.o differ
+Binary files coremark-orig/core_list_join.o and coremark_v1.0/core_list_join.o differ
+diff -rupN coremark-orig/core_main.c coremark_v1.0/core_main.c
+--- coremark-orig/core_main.c	2009-08-25 20:11:26.000000000 +0200
++++ coremark_v1.0/core_main.c	2015-09-29 19:43:07.736575486 +0200
+@@ -86,11 +86,11 @@ char *mem_name[3] = {"Static","Heap","St
+ */
+ 
+ #if MAIN_HAS_NOARGC
+-MAIN_RETURN_TYPE main(void) {
++MAIN_RETURN_TYPE coremark_main(void) {
+ 	int argc=0;
+ 	char *argv[1];
+ #else
+-MAIN_RETURN_TYPE main(int argc, char *argv[]) {
++MAIN_RETURN_TYPE coremark_main(int argc, char *argv[]) {
+ #endif
+ 	ee_u16 i,j=0,num_algorithms=0;
+ 	ee_s16 known_id=-1,total_errors=0;
+@@ -322,9 +322,11 @@ MAIN_RETURN_TYPE main(int argc, char *ar
+ 		ee_printf("[%d]crcfinal      : 0x%04x\n",i,results[i].crc);
+ 	if (total_errors==0) {
+ 		ee_printf("Correct operation validated. See readme.txt for run and reporting rules.\n");
+-#if HAS_FLOAT
++//#if HAS_FLOAT
+ 		if (known_id==3) {
+-			ee_printf("CoreMark 1.0 : %f / %s %s",default_num_contexts*results[0].iterations/time_in_secs(total_time),COMPILER_VERSION,COMPILER_FLAGS);
++			uint64_t coreMark = 100ULL * default_num_contexts*results[0].iterations/time_in_secs(total_time);
++//			float coreMark = default_num_contexts*results[0].iterations/time_in_secs(total_time);
++			ee_printf("CoreMark 1.0 : %d.%02d/ %s %s",(int)(coreMark/100ULL), (int)(coreMark%100ULL),COMPILER_VERSION,COMPILER_FLAGS);
+ #if defined(MEM_LOCATION) && !defined(MEM_LOCATION_UNSPEC)
+ 			ee_printf(" / %s",MEM_LOCATION);
+ #else
+@@ -336,7 +338,7 @@ MAIN_RETURN_TYPE main(int argc, char *ar
+ #endif
+ 			ee_printf("\n");
+ 		}
+-#endif
++//#endif
+ 	}
+ 	if (total_errors>0)
+ 		ee_printf("Errors detected\n");
+Binary files coremark-orig/core_main.o and coremark_v1.0/core_main.o differ
+Binary files coremark-orig/core_matrix.o and coremark_v1.0/core_matrix.o differ
+Binary files coremark-orig/core_state.o and coremark_v1.0/core_state.o differ
+Binary files coremark-orig/core_util.o and coremark_v1.0/core_util.o differ
+diff -rupN coremark-orig/fmod.c coremark_v1.0/fmod.c
+--- coremark-orig/fmod.c	1970-01-01 01:00:00.000000000 +0100
++++ coremark_v1.0/fmod.c	2015-05-28 15:39:02.000000000 +0200
+@@ -0,0 +1,154 @@
++
++typedef unsigned int u_int32_t;
++typedef signed int int32_t;
++
++// Big endian struct...
++typedef union {
++	double value;
++	struct {
++		u_int32_t msw;
++		u_int32_t lsw;
++	} parts;
++} ieee_double_shape_type;
++
++/*
++typedef union
++{
++  double value;
++  struct
++  {
++    u_int32_t lsw;
++    u_int32_t msw;
++  } parts;
++} ieee_double_shape_type;
++
++*/
++/* Get two 32 bit ints from a double.  */
++
++#define EXTRACT_WORDS(ix0,ix1,d)				\
++do {								\
++  ieee_double_shape_type ew_u;					\
++  ew_u.value = (d);						\
++  (ix0) = ew_u.parts.msw;					\
++  (ix1) = ew_u.parts.lsw;					\
++} while (0)
++
++/* Get the more significant 32 bit int from a double.  */
++
++#define GET_HIGH_WORD(i,d)					\
++do {								\
++  ieee_double_shape_type gh_u;					\
++  gh_u.value = (d);						\
++  (i) = gh_u.parts.msw;						\
++} while (0)
++
++/* Get the less significant 32 bit int from a double.  */
++
++#define GET_LOW_WORD(i,d)					\
++do {								\
++  ieee_double_shape_type gl_u;					\
++  gl_u.value = (d);						\
++  (i) = gl_u.parts.lsw;						\
++} while (0)
++
++/* Set a double from two 32 bit ints.  */
++
++#define INSERT_WORDS(d,ix0,ix1)					\
++do {								\
++  ieee_double_shape_type iw_u;					\
++  iw_u.parts.msw = (ix0);					\
++  iw_u.parts.lsw = (ix1);					\
++  (d) = iw_u.value;						\
++} while (0)
++
++/* Set the more significant 32 bits of a double from an int.  */
++
++#define SET_HIGH_WORD(d,v)					\
++do {								\
++  ieee_double_shape_type sh_u;					\
++  sh_u.value = (d);						\
++  sh_u.parts.msw = (v);						\
++  (d) = sh_u.value;						\
++} while (0)
++
++/* Set the less significant 32 bits of a double from an int.  */
++
++#define SET_LOW_WORD(d,v)					\
++do {								\
++  ieee_double_shape_type sl_u;					\
++  sl_u.value = (d);						\
++  sl_u.parts.lsw = (v);						\
++  (d) = sl_u.value;						\
++} while (0)
++
++/* A union which permits us to convert between a float and a 32 bit
++   int.  */
++
++typedef union {
++	float value;
++	u_int32_t word;
++} ieee_float_shape_type;
++
++/* Get a 32 bit int from a float.  */
++
++#define GET_FLOAT_WORD(i,d)					\
++do {								\
++  ieee_float_shape_type gf_u;					\
++  gf_u.value = (d);						\
++  (i) = gf_u.word;						\
++} while (0)
++
++/* Set a float from a 32 bit int.  */
++
++#define SET_FLOAT_WORD(d,i)					\
++do {								\
++  ieee_float_shape_type sf_u;					\
++  sf_u.word = (i);						\
++  (d) = sf_u.value;						\
++} while (0)
++
++static const double one = 1.0;
++
++double modf(double x, double *iptr)
++{
++	int32_t i0, i1, j0;
++	u_int32_t i;
++	EXTRACT_WORDS(i0, i1, x);
++	j0 = ((i0 >> 20) & 0x7ff) - 0x3ff;	/* exponent of x */
++	if (j0 < 20) {		/* integer part in high x */
++		if (j0 < 0) {	/* |x|<1 */
++			INSERT_WORDS(*iptr, i0 & 0x80000000, 0);	/* *iptr = +-0 */
++			return x;
++		} else {
++			i = (0x000fffff) >> j0;
++			if (((i0 & i) | i1) == 0) {	/* x is integral */
++				u_int32_t high;
++				*iptr = x;
++				GET_HIGH_WORD(high, x);
++				INSERT_WORDS(x, high & 0x80000000, 0);	/* return +-0 */
++				return x;
++			} else {
++				INSERT_WORDS(*iptr, i0 & (~i), 0);
++				return x - *iptr;
++			}
++		}
++	} else if (j0 > 51) {	/* no fraction part */
++		u_int32_t high;
++		*iptr = x * one;
++		GET_HIGH_WORD(high, x);
++		INSERT_WORDS(x, high & 0x80000000, 0);	/* return +-0 */
++		return x;
++	} else {		/* fraction part in low x */
++		i = ((u_int32_t) (0xffffffff)) >> (j0 - 20);
++		if ((i1 & i) == 0) {	/* x is integral */
++			u_int32_t high;
++			*iptr = x;
++			GET_HIGH_WORD(high, x);
++			INSERT_WORDS(x, high & 0x80000000, 0);	/* return +-0 */
++			return x;
++		} else {
++			INSERT_WORDS(*iptr, i0, i1 & (~i));
++			return x - *iptr;
++		}
++	}
++}
+Binary files coremark-orig/fmod.o and coremark_v1.0/fmod.o differ
+diff -rupN coremark-orig/Makefile coremark_v1.0/Makefile
+--- coremark-orig/Makefile	2009-07-10 19:48:43.000000000 +0200
++++ coremark_v1.0/Makefile	2015-09-01 20:38:41.026278322 +0200
+@@ -1,141 +1,24 @@
+-#Author : Shay Gal-On, EEMBC
+-#
+-#This file is part of  EEMBC(R) and CoreMark(TM), which are Copyright (C) 2009 
+-#All rights reserved.                            
+-#
+-#EEMBC CoreMark Software is a product of EEMBC and is provided under the terms of the
+-#CoreMark License that is distributed with the official EEMBC COREMARK Software release. 
+-#If you received this EEMBC CoreMark Software without the accompanying CoreMark License, 
+-#you must discontinue use and download the official release from www.coremark.org.  
+-#
+-#Also, if you are publicly displaying scores generated from the EEMBC CoreMark software, 
+-#make sure that you are in compliance with Run and Reporting rules specified in the accompanying readme.txt file.
+-#
+-#EEMBC 
+-#4354 Town Center Blvd. Suite 114-200
+-#El Dorado Hills, CA, 95762 
+-
+-
+-# Make sure the default target is to simply build and run the benchmark.
+-RSTAMP = v1.0
+-
+-.PHONY: run score
+-run: $(OUTFILE) rerun score
+-
+-score:
+-	@echo "Check run1.log and run2.log for results."
+-	@echo "See readme.txt for run and reporting rules." 
+-	
+-ifndef PORT_DIR
+-# Ports for a couple of common self hosted platforms
+-UNAME=$(shell if [[ `uname 2> /dev/null` ]] ; then uname ; fi)
+-ifneq (,$(findstring CYGWIN,$(UNAME)))
+-PORT_DIR=cygwin
+-endif
+-ifneq (,$(findstring Linux,$(UNAME)))
+-MACHINE=$(shell uname -m)
+-ifneq (,$(findstring 64,$(MACHINE)))
+-PORT_DIR=linux64
+-else
+-PORT_DIR=linux
+-endif
+-endif
+-endif
+-ifndef PORT_DIR
+-$(error PLEASE define PORT_DIR! (e.g. make PORT_DIR=simple)) 
+-endif
+-vpath %.c $(PORT_DIR)
+-vpath %.h $(PORT_DIR)
+-vpath %.mak $(PORT_DIR)
+-include $(PORT_DIR)/core_portme.mak
+-
+-ifndef $(ITERATIONS)
+-ITERATIONS=0
+-endif
+-ifdef REBUILD
+-FORCE_REBUILD=force_rebuild
+-endif
+-
+-CFLAGS += -DITERATIONS=$(ITERATIONS)
+-
+-CORE_FILES = core_list_join core_main core_matrix core_state core_util
+-ORIG_SRCS = $(addsuffix .c,$(CORE_FILES))
+-SRCS = $(ORIG_SRCS) $(PORT_SRCS)
+-OBJS = $(addprefix $(OPATH),$(addsuffix $(OEXT),$(CORE_FILES)) $(PORT_OBJS))
+-OUTNAME = coremark$(EXE)
+-OUTFILE = $(OPATH)$(OUTNAME)
+-LOUTCMD = $(OFLAG) $(OUTFILE) $(LFLAGS_END)
+-OUTCMD = $(OUTFLAG) $(OUTFILE) $(LFLAGS_END)
+-
+-HEADERS = coremark.h 
+-CHECK_FILES = $(ORIG_SRCS) $(HEADERS)
+-
+-$(OPATH):
+-	$(MKDIR) $(OPATH)
+-
+-.PHONY: compile link
+-ifdef SEPARATE_COMPILE
+-$(OPATH)$(PORT_DIR):
+-	$(MKDIR) $(OPATH)$(PORT_DIR)
+-
+-compile: $(OPATH) $(OPATH)$(PORT_DIR) $(OBJS) $(HEADERS) 
+-link: compile 
+-	$(LD) $(LFLAGS) $(XLFLAGS) $(OBJS) $(LOUTCMD)
+-	
+-else
+-
+-compile: $(OPATH) $(SRCS) $(HEADERS) 
+-	$(CC) $(CFLAGS) $(XCFLAGS) $(SRCS) $(OUTCMD)
+-link: compile 
+-	@echo "Link performed along with compile"
+-
+-endif
+-
+-$(OUTFILE): $(SRCS) $(HEADERS) Makefile core_portme.mak $(FORCE_REBUILD)
+-	$(MAKE) port_prebuild
+-	$(MAKE) link
+-	$(MAKE) port_postbuild
+-
+-.PHONY: rerun
+-rerun: 
+-	$(MAKE) XCFLAGS="$(XCFLAGS) -DPERFORMANCE_RUN=1" load run1.log
+-	$(MAKE) XCFLAGS="$(XCFLAGS) -DVALIDATION_RUN=1" load run2.log
+-
+-PARAM1=$(PORT_PARAMS) 0x0 0x0 0x66 $(ITERATIONS)
+-PARAM2=$(PORT_PARAMS) 0x3415 0x3415 0x66 $(ITERATIONS)
+-PARAM3=$(PORT_PARAMS) 8 8 8 $(ITERATIONS)
+-
+-run1.log-PARAM=$(PARAM1) 7 1 2000
+-run2.log-PARAM=$(PARAM2) 7 1 2000 
+-run3.log-PARAM=$(PARAM3) 7 1 1200
+-
+-run1.log run2.log run3.log: load
+-	$(MAKE) port_prerun
+-	$(RUN) $(OUTFILE) $($(@)-PARAM) > $(OPATH)$@
+-	$(MAKE) port_postrun
+-	
+-.PHONY: gen_pgo_data
+-gen_pgo_data: run3.log
+-
+-.PHONY: load
+-load: $(OUTFILE)
+-	$(MAKE) port_preload
+-	$(LOAD) $(OUTFILE)
+-	$(MAKE) port_postload
++CROSS_COMPILE ?= /opt/gcc-riscv-5.2.0/bin/riscv64-unknown-elf-
++
++CC =$(CROSS_COMPILE)gcc
++LD =$(CROSS_COMPILE)ld
++OBJDUMP =$(CROSS_COMPILE)objdump
++OBJCOPY =$(CROSS_COMPILE)objcopy
++SIZE =$(CROSS_COMPILE)size
++
++CFLAGS = -g -flto -m32 -O3 -funroll-all-loops -msoft-float -march=RV32IM  -I. -I../common -DFLAGS_STR="\"\"" -Ibarebones
++LIB	= libcoremark.a
++OBJS	= core_list_join.o  core_matrix.o  core_state.o  barebones/cvt.o \
++	core_main.o barebones/core_portme.o core_util.o barebones/ee_printf.o fmod.o
++
++all:	$(LIB)
++
++$(LIB):	$(OBJS)
++	ar rc $(LIB) $(OBJS)
+ 
+-.PHONY: clean
+ clean:
+-	rm -f $(OUTFILE) $(OPATH)*.log *.info $(OPATH)index.html $(PORT_CLEAN)
++	rm -f $(LIB) $(OBJS)
+ 
+-.PHONY: force_rebuild
+-force_rebuild:
+-	echo "Forcing Rebuild"
+-	
+-.PHONY: check
+-check:
+-	md5sum -c coremark.md5 
+-
+-ifdef ETC
+-# Targets related to testing and releasing CoreMark. Not part of the general release!
+-include Makefile.internal
+-endif	
++.depend:	Makefile $(OBJS:.o=.c)
++		$(CC) -M $(CFLAGS) $(OBJS:.o=.c) > $@
++sinclude .depend

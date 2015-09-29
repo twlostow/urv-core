@@ -302,3 +302,95 @@ module urv_iram
       end // else: !if(!g_simulation)
    
 `endif
+
+`ifdef URV_PLATFORM_ALTERA
+module urv_iram
+  #(
+    parameter g_size = 65536,
+    parameter g_init_file = "",
+    parameter g_simulation = 0
+    ) 
+   (
+    input 	  clk_i,
+
+    input 	  ena_i,
+    input 	  wea_i,
+    input [31:0]  aa_i,
+    input [3:0]   bwea_i,
+    input [31:0]  da_i,
+    output [31:0] qa_o, 
+    input 	  enb_i,
+    input 	  web_i,
+    input [31:0]  ab_i,
+    input [3:0]   bweb_i,
+    input [31:0]  db_i,
+    output [31:0] qb_o
+    );
+
+   localparam g_addr_width = $clogb2(g_size);
+      
+   	altsyncram
+	  ram (
+				.address_a (aa_i[g_addr_width+1:2]),
+				.address_b (aa_i[g_addr_width+1:2]),
+				.byteena_a (bwea_i),
+				.byteena_b (bweb_i),
+				.clock0 (clk_i),
+				.data_a (da_i),
+				.data_b (db_i),
+				.wren_a (wea_i),
+				.wren_b (web_i),
+				.q_a (qa_o),
+				.q_b (qb_o),
+				.aclr0 (1'b0),
+				.aclr1 (1'b0),
+				.addressstall_a (1'b0),
+				.addressstall_b (1'b0),
+				.clock1 (1'b1),
+				.clocken0 (1'b1),
+				.clocken1 (1'b1),
+				.clocken2 (1'b1),
+				.clocken3 (1'b1),
+				.eccstatus (),
+				.rden_a (1'b1),
+				.rden_b (1'b1));
+	defparam
+		altsyncram_component.address_reg_b = "CLOCK0",
+		altsyncram_component.byteena_reg_b = "CLOCK0",
+		altsyncram_component.byte_size = 8,
+		altsyncram_component.clock_enable_input_a = "BYPASS",
+		altsyncram_component.clock_enable_input_b = "BYPASS",
+		altsyncram_component.clock_enable_output_a = "BYPASS",
+		altsyncram_component.clock_enable_output_b = "BYPASS",
+		altsyncram_component.indata_reg_b = "CLOCK0",
+		altsyncram_component.init_file = g_init_file,
+		altsyncram_component.intended_device_family = "Cyclone IV E",
+		altsyncram_component.lpm_type = "altsyncram",
+		altsyncram_component.numwords_a = 16384,
+		altsyncram_component.numwords_b = 16384,
+		altsyncram_component.operation_mode = "BIDIR_DUAL_PORT",
+		altsyncram_component.outdata_aclr_a = "NONE",
+		altsyncram_component.outdata_aclr_b = "NONE",
+		altsyncram_component.outdata_reg_a = "UNREGISTERED",
+		altsyncram_component.outdata_reg_b = "UNREGISTERED",
+		altsyncram_component.power_up_uninitialized = "FALSE",
+		altsyncram_component.ram_block_type = "M9K",
+		altsyncram_component.read_during_write_mode_mixed_ports = "DONT_CARE",
+		altsyncram_component.read_during_write_mode_port_a = "NEW_DATA_WITH_NBE_READ",
+		altsyncram_component.read_during_write_mode_port_b = "NEW_DATA_WITH_NBE_READ",
+		altsyncram_component.widthad_a = 16,
+		altsyncram_component.widthad_b = 16,
+		altsyncram_component.width_a = 32,
+		altsyncram_component.width_b = 32,
+		altsyncram_component.width_byteena_a = 4,
+		altsyncram_component.width_byteena_b = 4,
+		altsyncram_component.wrcontrol_wraddress_reg_b = "CLOCK0";
+
+
+
+
+endmodule // urv_iram
+
+
+`endif //  `ifdef URV_PLATFORM_ALTERA
+   

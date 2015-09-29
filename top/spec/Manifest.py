@@ -4,7 +4,7 @@ files = ["spec_top.vhd",
 
 fetchto = "../../ip_cores"
 
-files = ["../../rtl/xrv_core.vhd", "spec_top.vhd", "reset_gen.vhd", "spec_top.ucf" ];
+files = [ "spec_top.vhd", "reset_gen.vhd", "spec_top.ucf" ];
 
 modules = {
     "local" : ["../../rtl/", "../../ip_cores/general-cores" ]

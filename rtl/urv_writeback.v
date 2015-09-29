@@ -46,8 +46,6 @@ module urv_writeback
    input [31:0]      x_multiply_rd_value_i,
    input [1:0] 	     x_rd_source_i,
 
-   output reg [31:0] x_bypass_o,
-   
    input [31:0]      dm_data_l_i,
    input 	     dm_load_done_i,
    input 	     dm_store_done_i,
@@ -123,10 +121,6 @@ module urv_writeback
        rf_rd_write <= x_rd_write_i & x_valid_i;
 
 
-   always@(posedge clk_i)
-     if( rf_rd_write )
-       x_bypass_o <= rf_rd_value;
-   
    assign rf_rd_write_o = rf_rd_write;
    assign rf_rd_value_o = rf_rd_value;
    assign rf_rd_o = x_rd_i;

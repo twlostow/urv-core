@@ -1,0 +1,3 @@
+[submodule "ip_cores/general-cores"]
+	path = ip_cores/general-cores
+	url = git://ohwr.org/hdl-core-lib/general-cores.git

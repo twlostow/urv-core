@@ -64,7 +64,7 @@ architecture rtl of spec_top is
       rst_n_o          : out std_logic);
   end component;
 
-  component xrv_core is
+  component xurv_core is
     generic (
       g_internal_ram_size      : integer;
       g_internal_ram_init_file : string;
@@ -80,7 +80,7 @@ architecture rtl of spec_top is
       dwb_i        : in  t_wishbone_master_in;
       host_slave_i : in  t_wishbone_slave_in          := cc_dummy_slave_in;
       host_slave_o : out t_wishbone_slave_out);
-  end component xrv_core;
+  end component xurv_core;
 
   constant c_cnx_slave_ports  : integer := 1;
   constant c_cnx_master_ports : integer := 2;
@@ -133,7 +133,7 @@ begin  -- rtl
      DIVCLK_DIVIDE      => 1,
      CLKFBOUT_MULT      => 8,
      CLKFBOUT_PHASE     => 0.000,
-     CLKOUT0_DIVIDE     => 7,          -- 62.5 MHz
+     CLKOUT0_DIVIDE     => 10,          -- 62.5 MHz
      CLKOUT0_PHASE      => 0.000,
      CLKOUT0_DUTY_CYCLE => 0.500,
      CLKOUT1_DIVIDE     => 8,          -- not used
@@ -174,7 +174,7 @@ begin  -- rtl
       rst_n_o          => rst_n_sys);
 
 
- U_CPU: xrv_core
+ U_CPU: xurv_core
    generic map (
      g_internal_ram_size      => g_riscv_mem_size,
      g_internal_ram_init_file => g_riscv_firmware,

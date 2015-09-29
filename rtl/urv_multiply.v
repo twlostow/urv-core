@@ -111,6 +111,44 @@ module urv_mult18x18
 endmodule // urv_mult18x18
 `endif //  `ifdef URV_PLATFORM_GENERIC
 
+`ifdef URV_PLATFORM_ALTERA
+
+module urv_mult18x18
+  (
+   input 	 clk_i,
+   input 	 rst_i,
+  
+   input 	 stall_i,
+  
+   input [17:0]  x_i,
+   input [17:0]  y_i,
+
+   output [35:0] q_o
+   );
+
+
+   lpm_mult multiplier (
+			.clock (clk_i),
+			.dataa (x_i),
+			.datab (y_i),
+			.result (q_o),
+			.aclr (1'b0),
+			.clken (!stall_i),
+			.sum (1'b0));
+   defparam
+     lpm_mult_component.lpm_hint = "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=5",
+     lpm_mult_component.lpm_pipeline = 1,
+     lpm_mult_component.lpm_representation = "SIGNED",
+     lpm_mult_component.lpm_type = "LPM_MULT",
+     lpm_mult_component.lpm_widtha = 18,
+     lpm_mult_component.lpm_widthb = 18,
+     lpm_mult_component.lpm_widthp = 36;
+
+endmodule // urv_mult18x18
+
+
+`endif
+
 
 module urv_multiply 
   (
